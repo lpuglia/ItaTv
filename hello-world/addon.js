@@ -77,9 +77,6 @@ function getMovieMeta(id) {
             runtime: "30 sec"
         },
     }
-	console.log("-----------------------------------")
-	console.log(metas)
-    console.log("-----------------------------------")
 	return Promise.resolve(metas[id] || null)
 }
 
@@ -127,10 +124,8 @@ builder.defineMetaHandler(({type, id}) => {
             results = null
             break
     }
-	console.log("-----------------------------------")
-	console.log({ meta: results })
-    console.log("-----------------------------------")
-    return Promise.resolve({ meta: results })
+    return results.then(meta => ({meta}))
+
 })
 
 // Docs: https://github.com/Stremio/stremio-addon-sdk/blob/master/docs/api/requests/defineCatalogHandler.md
