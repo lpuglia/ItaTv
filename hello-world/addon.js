@@ -86,9 +86,9 @@ function getMovieStreams(id) {
             { "title": "HTTP location", "yt_ID": "aqz-KE-bpKQ"}
         ],
         hiwrld_jellyfish: [
-            { "title": "Web, 3 MBps, HD", "url": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4" },
-            { "title": "Web 15 MBps, HD", "url": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4" },
-            { "title": "Web, 120 MBps, 4K", "url": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4" }
+            { "title": "Web, 3 MBps, HD", "url": "https://download.samplelib.com/mp4/sample-5s.mp4" },
+            { "title": "Web 15 MBps, HD", "url": "https://download.samplelib.com/mp4/sample-5s.mp4" },
+            { "title": "Web, 120 MBps, 4K", "url": "https://download.samplelib.com/mp4/sample-5s.mp4" }
         ]
     }
     return Promise.resolve(streams[id] || [])
