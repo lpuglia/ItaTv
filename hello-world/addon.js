@@ -86,9 +86,9 @@ function getMovieStreams(id) {
             { "title": "HTTP location", "yt_ID": "aqz-KE-bpKQ"}
         ],
         hiwrld_jellyfish: [
-            { "title": "Web, 3 MBps, HD", "url": "https://download.samplelib.com/mp4/sample-5s.mp4" },
-            { "title": "Web 15 MBps, HD", "url": "https://download.samplelib.com/mp4/sample-5s.mp4" },
-            { "title": "Web, 120 MBps, 4K", "url": "https://download.samplelib.com/mp4/sample-5s.mp4" }
+            { "title": "Web, 3 MBps, HD", "url": "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8" },
+            { "title": "Web 15 MBps, HD", "url": "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd" },
+            { "title": "Web, 120 MBps, 4K", "url": "https://vodpkg.iltrovatore.it/local/dash//,/content/entry/data/0/596/0_vmgx8vey_0_3as0bobl_1,/content/entry/data/0/596/0_vmgx8vey_0_0t0j8m98_1,.mp4.urlset/manifest.mpd" }
         ]
     }
     return Promise.resolve(streams[id] || [])
