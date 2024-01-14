@@ -19,16 +19,23 @@ async function scrape_la7() {
             }
         });
 
-        catalog = []
+        catalog = {}
+
+        try {
+            catalog = JSON.parse(fs.readFileSync('catalog/catalog.json', 'utf8'))
+        } catch (error) {
+            console.error(error.message)
+        }
 
         for (const meta of programmi) {
             console.log(meta)
             result = await get_episodes(meta)
             if(result !== undefined){
-                catalog.push(result)
+                catalog[result.id] = result
             }
+            fs.writeFileSync('catalog/catalog.json', JSON.stringify(catalog, null, 2), (err) => {});
         };
-        fs.writeFileSync('catalog/catalog.json', JSON.stringify(catalog, null, 2), (err) => {});
+
 
     } catch (error) {
         // console.error(error.message);
@@ -58,9 +65,6 @@ async function get_episodes(meta){
         "background": background,
         "videos": {} // this must be converted to a list when serving it as a meta
     };
-    // if (!fs.existsSync('catalog/shows/'+id_programma+'.json')) {
-    //     fs.writeFileSync('catalog/shows/'+id_programma+'.json', JSON.stringify(metas, null, 2), (err) => {});
-    // }
 
     try {
         metas['videos'] = JSON.parse(fs.readFileSync('catalog/shows/'+id_programma+'.json', 'utf8'))['videos']
