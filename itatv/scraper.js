@@ -58,15 +58,15 @@ async function get_episodes(meta){
         "background": background,
         "videos": {} // this must be converted to a list when serving it as a meta
     };
-    if (!fs.existsSync('catalog/shows/'+id_programma+'.json')) {
-        fs.writeFileSync('catalog/shows/'+id_programma+'.json', JSON.stringify(metas, null, 2), (err) => {});
-    }
+    // if (!fs.existsSync('catalog/shows/'+id_programma+'.json')) {
+    //     fs.writeFileSync('catalog/shows/'+id_programma+'.json', JSON.stringify(metas, null, 2), (err) => {});
+    // }
 
     try {
         metas['videos'] = JSON.parse(fs.readFileSync('catalog/shows/'+id_programma+'.json', 'utf8'))['videos']
     } catch (error) {
-        // console.error(error.message)
-        throw error;
+        console.error(error.message)
+        // throw error;
     }
     
     const url = "https://www.la7.it/" + meta.name + '/rivedila7'
