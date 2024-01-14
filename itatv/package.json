@@ -6,6 +6,9 @@
 		"start": "node server.js"
 	},
 	"dependencies": {
-		"stremio-addon-sdk": "1.1.x"
+		"axios": "^1.6.5",
+		"cheerio": "^1.0.0-rc.12",
+		"stremio-addon-sdk": "1.1.x",
+		"string-similarity": "^4.0.4"
 	}
 }

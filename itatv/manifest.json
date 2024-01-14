@@ -1,0 +1,26 @@
+{
+    "id": "it.itatv",
+    "version": "0.0.1",
+    "catalogs": [
+        {
+            "id": "seriesCatalog", "type": "series", "name": "Ita TV, TV Shows",
+            "extra": [
+                { "name": "search", "isRequired": false }
+            ]
+        }
+    ],
+    "resources": [
+		"catalog",
+		{
+			"name": "meta",
+			"types": ["series"],
+			"idPrefixes": ["itatv_"]
+		},
+		"stream"
+	],
+    "types": [
+        "series"
+    ],
+    "name": "Ita TV",
+    "description": "Selected Italian TV live/on demand streams"
+}
