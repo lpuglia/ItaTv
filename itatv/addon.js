@@ -29,18 +29,28 @@ function getSeriesMeta(id){
     return Promise.resolve(meta || null)
 }
 
+function getSeriesStreams(id) {
+    const filename = id.split(':').slice(0,-1).join(':')+'.json';
+    meta = JSON.parse(fs.readFileSync('catalog/shows/'+filename, 'utf8'))
+    videos = Object.values(meta['videos']) // convert dict to a list of its values
+    result = videos.find(video => video.id === id);
+    streams = [{"title": 'Web MPEG-Dash', "url": result.video_url}]
+    return Promise.resolve(streams || [])
+}
+
 const builder = new addonBuilder(manifest)
 
 builder.defineStreamHandler(({type, id}) => {
-
-    let results;
-
-    // this magically works because there is a streams field in the meta
+ 
     switch(type) {
-       default:
+        case 'series':
+            results = getSeriesStreams(id)
+            break
+        default:
             results = Promise.resolve( [] )
             break
     }
+    console.log(results)
     return results.then(streams => ({streams}))
 })
 
@@ -55,6 +65,7 @@ builder.defineMetaHandler(({type, id}) => {
             results = null
             break
     }
+    console.log(results)
     return results.then(meta => ({meta}))
 })
 
@@ -87,5 +98,5 @@ builder.defineCatalogHandler(({type, id, extra}) => {
  })
 
 module.exports = builder.getInterface()
-
-scraper.scrape_la7()
+// scraper.scrape_la7()
+// setInterval(scraper.scrape_la7, 100 * 60 * 1000);

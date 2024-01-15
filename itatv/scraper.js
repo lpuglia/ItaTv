@@ -102,17 +102,17 @@ async function get_episodes(meta){
           $ = cheerio.load(response.data);
         }
         
-        // index = 0
+        index = 0
         for (const episodeUrl of episodeUrls) {
             if (episodeUrl in metas['videos']) continue
             episode = await getEpisode(id_programma, episodeUrl)
 
             episode['url_id'] = episodeUrl
-            episode['streams'] = [{"title": 'Web MPEG-Dash', "url": episode['video_url']}]
+            episode['video_url'] = episode['video_url']
 
             metas['videos'][episodeUrl] = episode
-            // if(index>2) break
-            // index += 1
+            if(index>2) break
+            index += 1
             console.log('added '+episodeUrl)
             fs.writeFileSync('catalog/shows/'+id_programma+'.json', JSON.stringify(metas, null, 2), (err) => {});
         }
@@ -144,7 +144,7 @@ async function getEpisode(id_programma, url) {
     return episode = {
         "season": +dateParts[2],
         "episode": dateParts[1].padStart(2, '0') + dateParts[0].padStart(2, '0'),
-        "id": id_programma+"_"+date,
+        "id": id_programma+":"+date,
         "title": $("div.infoVideoRow > h1").text(),
         "released": date,
         "overview": $("div.occhiello").text(),
