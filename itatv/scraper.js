@@ -142,10 +142,12 @@ async function getEpisode(id_programma, url) {
 
     // const duration = parseInt(response.data.split(',videoDuration : "')[1].split('",')[0]) * 1000; //ms
 
+    season = +dateParts[2]
+    episode = parseInt(dateParts[1].padStart(2, '0') + dateParts[0].padStart(2, '0'))
     return episode = {
-        "season": +dateParts[2],
-        "episode": parseInt(dateParts[1].padStart(2, '0') + dateParts[0].padStart(2, '0')),
-        "id": id_programma+":"+date,
+        "season": season,
+        "episode": episode,
+        "id": id_programma+":"+season+":"+episode,
         "title": $("div.infoVideoRow > h1").text(),
         "released": date,
         "overview": $("div.occhiello").text(),

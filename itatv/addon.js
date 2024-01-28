@@ -30,7 +30,8 @@ function getSeriesMeta(id){
 }
 
 function getSeriesStreams(id) {
-    const filename = id.split(':').slice(0,-1).join(':')+'.json';
+    console.log(id)
+    const filename = id.split(':').slice(0,1)+'.json';
     meta = JSON.parse(fs.readFileSync('catalog/shows/'+filename, 'utf8'))
     videos = Object.values(meta['videos']) // convert dict to a list of its values
     result = videos.find(video => video.id === id);
