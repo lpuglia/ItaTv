@@ -111,7 +111,7 @@ async function get_episodes(meta){
             episode['video_url'] = episode['video_url']
 
             metas['videos'][episodeUrl] = episode
-            if(index>2) break
+            if(index>4) break
             index += 1
             console.log('added '+episodeUrl)
             fs.writeFileSync('catalog/shows/'+id_programma+'.json', JSON.stringify(metas, null, 2), (err) => {});
