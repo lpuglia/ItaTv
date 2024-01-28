@@ -98,5 +98,5 @@ builder.defineCatalogHandler(({type, id, extra}) => {
  })
 
 module.exports = builder.getInterface()
-// scraper.scrape_la7()
+scraper.scrape_la7()
 // setInterval(scraper.scrape_la7, 100 * 60 * 1000);

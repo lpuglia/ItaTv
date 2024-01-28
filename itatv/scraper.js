@@ -137,13 +137,13 @@ async function getEpisode(id_programma, url) {
 
     const dateVideo = $("div.dateVideo").text().trim();
     const dateParts = dateVideo.split("/");
-    const date = dateParts[2] +"-"+ dateParts[1] +"-"+ dateParts[0]
+    const date = new Date(dateParts[2] +"-"+ dateParts[1] +"-"+ dateParts[0])
 
     // const duration = parseInt(response.data.split(',videoDuration : "')[1].split('",')[0]) * 1000; //ms
 
     return episode = {
         "season": +dateParts[2],
-        "episode": dateParts[1].padStart(2, '0') + dateParts[0].padStart(2, '0'),
+        "episode": parseInt(dateParts[1].padStart(2, '0') + dateParts[0].padStart(2, '0')),
         "id": id_programma+":"+date,
         "title": $("div.infoVideoRow > h1").text(),
         "released": date,
