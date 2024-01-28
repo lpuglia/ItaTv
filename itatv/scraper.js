@@ -144,7 +144,7 @@ async function getEpisode(id_programma, url) {
 
     return episode = {
         "season": +dateParts[2],
-        "episode": parseInt(dateParts[1].padStart(2, '0') + dateParts[0].padStart(2, '0')),
+        // "episode": parseInt(dateParts[1].padStart(2, '0') + dateParts[0].padStart(2, '0')),
         "id": id_programma+":"+date,
         "title": $("div.infoVideoRow > h1").text(),
         "released": date,
