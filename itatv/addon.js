@@ -99,5 +99,18 @@ builder.defineCatalogHandler(({type, id, extra}) => {
  })
 
 module.exports = builder.getInterface()
-scraper.scrape_la7()
+async function startScraping() {
+    while (true) {
+      try {
+        await scraper.scrape_la7();
+        // Add any additional logic or delay if needed
+      } catch (error) {
+        console.error('An error occurred while scraping:', error);
+        // Handle the error as needed
+      }
+    }
+}
+
+startScraping();
+
 // setInterval(scraper.scrape_la7, 100 * 60 * 1000);
