@@ -123,7 +123,7 @@ async function get_episodes(meta){
     }
 
 
-    if(Object.keys(metas.videos).length !== 0){
+    if(Object.keys(metas.videos).length === 0){
         return
     }
     delete metas['videos']
