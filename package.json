@@ -1,6 +1,6 @@
 {
-	"name": "stremio-addon-helloworld",
-	"version": "0.0.2",
+	"name": "stremio-addon-itatv",
+	"version": "0.0.5",
 	"description": "",
 	"scripts": {
 		"start": "node server.js"

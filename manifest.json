@@ -1,6 +1,6 @@
 {
     "id": "it.itatv",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "catalogs": [
         {
             "id": "seriesCatalog", "type": "series", "name": "Ita TV, TV Shows",
