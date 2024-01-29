@@ -1,40 +1,26 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const fs = require('fs');
 
-async function scrape_la7() {
+async function scrape_la7(catalog_cache, meta_cache, stream_cache, visited_urls) {
 
     try {
         let response = await axios.get("https://www.la7.it/programmi#P");
         let $ = cheerio.load(response.data);
 
         const containerDiv = $('#container-programmi-list');
-        const programmi = [];
+        const shows = [];
         containerDiv.find('div.list-item').each((index, element) => {
             const anchor = $(element).find('a')
             if (anchor.length !== 0){
                 const name = anchor.attr('href').substring(1)
                 const poster = $(element).find('div.image-bg').attr('data-background-image');
-                programmi.push({name, poster});
+                shows.push({name, poster});
             }
         });
 
-        catalog = {}
-
-        try {
-            catalog = JSON.parse(fs.readFileSync('catalog/catalog.json', 'utf8'))
-        } catch (error) {
-            console.error(error.message)
-            console.log(`Creating catalog/catalog.json. Try again in few minutes.`);
-        }
-
-        for (const meta of programmi) {
-            console.log(meta)
-            result = await get_episodes(meta)
-            if(result !== undefined){
-                catalog[result.id] = result
-            }
-            fs.writeFileSync('catalog/catalog.json', JSON.stringify(catalog, null, 2), (err) => {});
+        for (const show of shows) {
+            console.log(show)
+            await get_episodes(show, catalog_cache, meta_cache, stream_cache, visited_urls)
         };
 
 
@@ -44,10 +30,10 @@ async function scrape_la7() {
     }
 }
 
-async function get_episodes(meta){
+async function get_episodes(show, catalog_cache, meta_cache, stream_cache, visited_urls){
 
     setTimeout(() => {}, 500);
-    let response = await axios.get("https://www.la7.it/" + meta.name);
+    let response = await axios.get("https://www.la7.it/" + show.name);
     let $ = cheerio.load(response.data);
 
     const match = $('#headerProperty').attr('style').match(/background-image\s*:\s*url\s*\(\s*'([^']*)'\s*\)/);
@@ -56,25 +42,28 @@ async function get_episodes(meta){
     const info = $('.fascia_banner .in-fascia-banner').eq(1).text().trim();
     const description = $('.fascia_banner .testo p').text().trim();
 
-    id_programma = "itatv_" + meta.name
-    const metas = {
-        "id": id_programma,
-        "type": "series",
-        "name": name,
-        "description": description,
-        "poster": meta.poster,
-        "background": background,
-        "videos": {} // this must be converted to a list when serving it as a meta
-    };
-
-    try {
-        metas['videos'] = JSON.parse(fs.readFileSync('catalog/shows/'+id_programma+'.json', 'utf8'))['videos']
-    } catch (error) {
-        console.error(error.message)
-        // throw error;
+    id_programma = "itatv_" + show.name
+    if(!(id_programma in meta_cache)){
+        meta_cache[id_programma] = {
+            "id": id_programma,
+            "type": "series",
+            "name": name,
+            "description": description,
+            "poster": show.poster,
+            "background": background,
+            "videos": []
+        };
+        catalog_cache[id_programma] = {
+            "id": id_programma,
+            "type": "series",
+            "name": name,
+            "description": description,
+            "poster": show.poster,
+            "background": background
+        };
     }
     
-    const url = "https://www.la7.it/" + meta.name + '/rivedila7'
+    const url = "https://www.la7.it/" + show.name + '/rivedila7'
     try {
         let response = await axios.get(url);
         let $ = cheerio.load(response.data);
@@ -103,19 +92,19 @@ async function get_episodes(meta){
           $ = cheerio.load(response.data);
         }
         
-        // index = 0
+        index = 0
         for (const episodeUrl of episodeUrls) {
-            if (episodeUrl in metas['videos']) continue
-            episode = await getEpisode(id_programma, episodeUrl)
+            if (visited_urls.has(episodeUrl)) continue
+            [episode, video_url] = await getEpisode(episodeUrl)
 
-            episode['url_id'] = episodeUrl
-            episode['video_url'] = episode['video_url']
+            episode.id = id_programma+":"+episode.season+":"+episode.episode,
+            meta_cache[id_programma].videos.push(episode)
+            stream_cache[episode.id] = [{"title": 'Web MPEG-Dash', "url": video_url}]
+            visited_urls.add(episodeUrl)
 
-            metas['videos'][episodeUrl] = episode
-            // if(index>4) break
-            // index += 1
+            if(index>10) break // cache 10 episodes by most recent at a time
+            index += 1
             // console.log('added '+episodeUrl)
-            fs.writeFileSync('catalog/shows/'+id_programma+'.json', JSON.stringify(metas, null, 2), (err) => {});
         }
         
     } catch (error) {
@@ -123,15 +112,12 @@ async function get_episodes(meta){
         // throw error;
     }
 
-
-    if(Object.keys(metas.videos).length === 0){
-        return
-    }
-    delete metas['videos']
-    return metas
+    if(meta_cache[id_programma].videos.length === 0){
+        delete catalog_cache[id_programma]
+   }
 }
 
-async function getEpisode(id_programma, url) {
+async function getEpisode(url) {
     setTimeout(() => {}, 500);
     const response = await axios.get(url);
 
@@ -144,19 +130,20 @@ async function getEpisode(id_programma, url) {
     // const duration = parseInt(response.data.split(',videoDuration : "')[1].split('",')[0]) * 1000; //ms
 
     season = +dateParts[2]
-    episode = parseInt(dateParts[1].padStart(2, '0') + dateParts[0].padStart(2, '0'))
-    return episode = {
-        "season": season,
-        "episode": episode,
-        "id": id_programma+":"+season+":"+episode,
-        "title": $("div.infoVideoRow > h1").text(),
-        "released": date,
-        "overview": $("div.occhiello").text(),
-        "thumbnail": "https:" + $("div.contextProperty img").attr("src").replace("http:", ""),
-        "video_url" : "https://awsvodpkg.iltrovatore.it/local/dash/" + 
-                      response.data.split("http://la7-vh.akamaihd.net/i")[1].split("csmil/master.m3u8")[0] +
-                      "urlset/manifest.mpd"
-    }
+    episode_number = parseInt(dateParts[1].padStart(2, '0') + dateParts[0].padStart(2, '0'))
+    return [
+            {
+                "season": season,
+                "episode": episode_number,
+                "title": $("div.infoVideoRow > h1").text(),
+                "released": date,
+                "overview": $("div.occhiello").text(),
+                "thumbnail": "https:" + $("div.contextProperty img").attr("src").replace("http:", ""),
+            },
+            "https://awsvodpkg.iltrovatore.it/local/dash/" + 
+            response.data.split("http://la7-vh.akamaihd.net/i")[1].split("csmil/master.m3u8")[0] +
+            "urlset/manifest.mpd"
+        ]
 }
 
 module.exports = {

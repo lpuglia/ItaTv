@@ -1,9 +1,9 @@
 {
     "id": "it.itatv",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "catalogs": [
         {
-            "id": "seriesCatalog", "type": "series", "name": "Ita TV 005",
+            "id": "seriesCatalog", "type": "series", "name": "Ita TV 006",
             "extra": [
                 { "name": "search", "isRequired": false }
             ]

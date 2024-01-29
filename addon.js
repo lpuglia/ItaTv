@@ -6,20 +6,18 @@ const { addonBuilder } = require("stremio-addon-sdk")
 
 var manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
 
+catalog_cache = {}
+meta_cache = {}
+stream_cache = {}
+visited_urls = new Set
+
 // Populate the catalog from somewhere
 function getSeriesCatalog(catalogName) {
     let catalog;
 
     switch(catalogName) {
         case "seriesCatalog":
-            filePath = 'catalog/catalog.json'
-            if (fs.existsSync(filePath)) {
-                catalog = JSON.parse(fs.readFileSync(filePath, 'utf8'))
-                catalog = Object.values(catalog) // convert dict to a list of its values
-            } else {
-                console.log(`Creating '${filePath}'. Try again in few minutes.`);
-                catalog = []
-            }
+            catalog = Object.values(catalog_cache) // convert dict to a list of its values
             break
         default:
             catalog = []
@@ -29,22 +27,6 @@ function getSeriesCatalog(catalogName) {
     return Promise.resolve(catalog)
 }
 
-function getSeriesMeta(id){
-    meta = JSON.parse(fs.readFileSync('catalog/shows/'+id+'.json', 'utf8'))
-    meta['videos'] = Object.values(meta['videos']) // convert dict to a list of its values
-    return Promise.resolve(meta || null)
-}
-
-function getSeriesStreams(id) {
-    // console.log(id)
-    const filename = id.split(':').slice(0,1)+'.json';
-    meta = JSON.parse(fs.readFileSync('catalog/shows/'+filename, 'utf8'))
-    videos = Object.values(meta['videos']) // convert dict to a list of its values
-    result = videos.find(video => video.id === id);
-    streams = [{"title": 'Web MPEG-Dash', "url": result.video_url}]
-    return Promise.resolve(streams || [])
-}
-
 const builder = new addonBuilder(manifest)
 
 builder.defineStreamHandler(({type, id}) => {
@@ -52,7 +34,7 @@ builder.defineStreamHandler(({type, id}) => {
     switch(type) {
         case 'series':
             if(id.startsWith("itatv_")){
-                results = getSeriesStreams(id)
+                results = Promise.resolve( stream_cache[id] )
             }else{
                 results = Promise.resolve( [] )
             }
@@ -70,7 +52,7 @@ builder.defineMetaHandler(({type, id}) => {
     let results;
 	switch(type) {
         case 'series':
-            results = getSeriesMeta(id)
+            results = Promise.resolve( meta_cache[id] )
             break
         default:
             results = null
@@ -112,7 +94,7 @@ module.exports = builder.getInterface()
 async function startScraping() {
     while (true) {
       try {
-        await scraper.scrape_la7();
+        await scraper.scrape_la7(catalog_cache, meta_cache, stream_cache, visited_urls);
         // Add any additional logic or delay if needed
       } catch (error) {
         console.error('An error occurred while scraping:', error);
