@@ -12,8 +12,13 @@ function getSeriesCatalog(catalogName) {
 
     switch(catalogName) {
         case "seriesCatalog":
-            catalog = JSON.parse(fs.readFileSync('catalog/catalog.json', 'utf8'))
-            catalog = Object.values(catalog) // convert dict to a list of its values
+            if (fs.existsSync(filePath)) {
+                catalog = JSON.parse(fs.readFileSync('catalog/catalog.json', 'utf8'))
+                catalog = Object.values(catalog) // convert dict to a list of its values
+            } else {
+                console.log(`Creating '${filePath}'. Try again in few minutes.`);
+                catalog = []
+            }
             break
         default:
             catalog = []

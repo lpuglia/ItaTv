@@ -25,6 +25,7 @@ async function scrape_la7() {
             catalog = JSON.parse(fs.readFileSync('catalog/catalog.json', 'utf8'))
         } catch (error) {
             console.error(error.message)
+            console.log(`Creating catalog/catalog.json. Try again in few minutes.`);
         }
 
         for (const meta of programmi) {
@@ -38,8 +39,8 @@ async function scrape_la7() {
 
 
     } catch (error) {
-        // console.error(error.message);
-        throw error;
+        console.error(error.message);
+        // throw error;
     }
 }
 
