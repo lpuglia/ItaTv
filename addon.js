@@ -36,7 +36,7 @@ function getSeriesMeta(id){
 }
 
 function getSeriesStreams(id) {
-    console.log(id)
+    // console.log(id)
     const filename = id.split(':').slice(0,1)+'.json';
     meta = JSON.parse(fs.readFileSync('catalog/shows/'+filename, 'utf8'))
     videos = Object.values(meta['videos']) // convert dict to a list of its values
@@ -57,7 +57,7 @@ builder.defineStreamHandler(({type, id}) => {
             results = Promise.resolve( [] )
             break
     }
-    console.log(results)
+    // console.log(results)
     return results.then(streams => ({streams}))
 })
 
@@ -72,7 +72,7 @@ builder.defineMetaHandler(({type, id}) => {
             results = null
             break
     }
-    console.log(results)
+    // console.log(results)
     return results.then(meta => ({meta}))
 })
 

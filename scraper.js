@@ -103,7 +103,7 @@ async function get_episodes(meta){
           $ = cheerio.load(response.data);
         }
         
-        index = 0
+        // index = 0
         for (const episodeUrl of episodeUrls) {
             if (episodeUrl in metas['videos']) continue
             episode = await getEpisode(id_programma, episodeUrl)
@@ -112,9 +112,9 @@ async function get_episodes(meta){
             episode['video_url'] = episode['video_url']
 
             metas['videos'][episodeUrl] = episode
-            if(index>4) break
-            index += 1
-            console.log('added '+episodeUrl)
+            // if(index>4) break
+            // index += 1
+            // console.log('added '+episodeUrl)
             fs.writeFileSync('catalog/shows/'+id_programma+'.json', JSON.stringify(metas, null, 2), (err) => {});
         }
         
