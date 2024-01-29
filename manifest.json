@@ -3,7 +3,7 @@
     "version": "0.0.5",
     "catalogs": [
         {
-            "id": "seriesCatalog", "type": "series", "name": "Ita TV, TV Shows",
+            "id": "seriesCatalog", "type": "series", "name": "Ita TV 005",
             "extra": [
                 { "name": "search", "isRequired": false }
             ]
