@@ -1,6 +1,6 @@
 {
 	"name": "stremio-addon-helloworld",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "",
 	"scripts": {
 		"start": "node server.js"
