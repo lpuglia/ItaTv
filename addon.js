@@ -116,6 +116,6 @@ async function startScraping() {
     }
 }
 
-startScraping();
+// startScraping();
 
 // setInterval(scraper.scrape_la7, 100 * 60 * 1000);
