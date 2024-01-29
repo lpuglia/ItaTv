@@ -51,7 +51,11 @@ builder.defineStreamHandler(({type, id}) => {
  
     switch(type) {
         case 'series':
-            results = getSeriesStreams(id)
+            if(id.startsWith("itatv_")){
+                results = getSeriesStreams(id)
+            }else{
+                results = Promise.resolve( [] )
+            }
             break
         default:
             results = Promise.resolve( [] )
