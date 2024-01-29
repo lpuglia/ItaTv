@@ -12,8 +12,9 @@ function getSeriesCatalog(catalogName) {
 
     switch(catalogName) {
         case "seriesCatalog":
+            filePath = 'catalog/catalog.json'
             if (fs.existsSync(filePath)) {
-                catalog = JSON.parse(fs.readFileSync('catalog/catalog.json', 'utf8'))
+                catalog = JSON.parse(fs.readFileSync(filePath, 'utf8'))
                 catalog = Object.values(catalog) // convert dict to a list of its values
             } else {
                 console.log(`Creating '${filePath}'. Try again in few minutes.`);
@@ -116,6 +117,6 @@ async function startScraping() {
     }
 }
 
-// startScraping();
+startScraping();
 
 // setInterval(scraper.scrape_la7, 100 * 60 * 1000);
