@@ -1,6 +1,9 @@
 {
     "id": "it.itatv",
     "version": "0.0.6",
+    "logo": "https://i.imgur.com/UFmjxIQ.png",
+    "background": "https://i.imgur.com/zoEMlhv.png",
+
     "catalogs": [
         {
             "id": "seriesCatalog", "type": "series", "name": "Ita TV 006",
