@@ -18,7 +18,7 @@ function sleep(ms) {
 async function request_url(url){
     while (true) {
         try{
-            console.log(maxRequestsPerSecond)
+            // console.log(maxRequestsPerSecond)
             limitedAxios = rateLimit(axios.create(), {
                 maxRequests: maxRequestsPerSecond,
                 perMilliseconds: 10000,
@@ -44,7 +44,6 @@ async function request_url(url){
 
 async function scrape_la7(catalog_cache, meta_cache, stream_cache, visited_urls) {
     try {
-        console.log(Object.keys(catalog_cache).length, Object.keys(meta_cache).length, Object.keys(stream_cache).length, visited_urls.size)
         
         let response = await request_url("https://www.la7.it/programmi#P");
         let $ = cheerio.load(response.data);
@@ -63,6 +62,8 @@ async function scrape_la7(catalog_cache, meta_cache, stream_cache, visited_urls)
         for (const show of shows) {
             console.log(show.name)
             await get_episodes(show, catalog_cache, meta_cache, stream_cache, visited_urls)
+            console.log(Object.keys(catalog_cache).length, Object.keys(meta_cache).length, Object.keys(stream_cache).length, visited_urls.size)
+
         };
 
 
