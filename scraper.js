@@ -33,6 +33,9 @@ async function request_url(url){
                 if(error.response.status===429){
                     if(maxRequestsPerSecond>2) maxRequestsPerSecond/=2
                 }
+                if(error.response.status===404){
+                    throw error
+                }
                 await sleep(10000/maxRequestsPerSecond);
             }else{
                 console.error(error.message);
