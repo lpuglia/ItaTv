@@ -6,7 +6,7 @@ const { addonBuilder } = require("stremio-addon-sdk")
 
 var manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
 
-catalog_cache = {}
+catalog_cache = {} 
 meta_cache = {}
 stream_cache = {}
 visited_urls = new Set
@@ -99,10 +99,9 @@ async function startScraping() {
       } catch (error) {
         console.error('An error occurred while scraping:', error);
         // Handle the error as needed
+        // throw error
       }
     }
 }
 
 startScraping();
-
-// setInterval(scraper.scrape_la7, 100 * 60 * 1000);
