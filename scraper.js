@@ -45,9 +45,8 @@ async function request_url(url){
     }
 }
 
-async function scrape_la7(catalog_cache, meta_cache, stream_cache, visited_urls) {
+async function scrape_la7(cache) {
     try {
-        
         let response = await request_url("https://www.la7.it/programmi#P");
         let $ = cheerio.load(response.data);
 
@@ -64,9 +63,7 @@ async function scrape_la7(catalog_cache, meta_cache, stream_cache, visited_urls)
 
         for (const show of shows) {
             console.log(show.name)
-            await get_episodes(show, catalog_cache, meta_cache, stream_cache, visited_urls)
-            console.log(Object.keys(catalog_cache).length, Object.keys(meta_cache).length, Object.keys(stream_cache).length, visited_urls.size)
-
+            await get_episodes(show, cache)
         };
 
 
@@ -76,7 +73,7 @@ async function scrape_la7(catalog_cache, meta_cache, stream_cache, visited_urls)
     }
 }
 
-async function get_episodes(show, catalog_cache, meta_cache, stream_cache, visited_urls){
+async function get_episodes(show, cache){
 
     try {
         let response = await request_url("https://www.la7.it/" + show.name);
@@ -89,26 +86,6 @@ async function get_episodes(show, catalog_cache, meta_cache, stream_cache, visit
         const description = $('.fascia_banner .testo p').text().trim();
 
         id_programma = "itatv_" + show.name
-        if(!(id_programma in meta_cache)){
-            meta_cache[id_programma] = {
-                "id": id_programma,
-                "type": "series",
-                "name": name,
-                "description": description,
-                "poster": show.poster,
-                "background": background,
-                "videos": []
-            };
-            catalog_cache[id_programma] = {
-                "id": id_programma,
-                "type": "series",
-                "name": name,
-                "description": description,
-                "poster": show.poster,
-                "background": background
-            };
-        }
-        
         const url = "https://www.la7.it/" + show.name + '/rivedila7'
 
         response = await request_url(url);
@@ -119,7 +96,7 @@ async function get_episodes(show, catalog_cache, meta_cache, stream_cache, visit
     
         // Check for La Settimana
         $("div.subcontent div.hidden-prev a").each((index, element) => {
-          episodeUrls.push("https://www.la7.it" + $(element).attr("href"));
+          episodeUrls.push($(element).attr("href"));
         });
     
         let counter = 1;
@@ -129,7 +106,7 @@ async function get_episodes(show, catalog_cache, meta_cache, stream_cache, visit
           if (episodeLinks.length === 0) break;
     
           episodeLinks.each((index, element) => {
-            episodeUrls.push("https://www.la7.it" + $(element).attr("href"));
+            episodeUrls.push($(element).attr("href"));
           });
           counter += 1;
 
@@ -137,24 +114,33 @@ async function get_episodes(show, catalog_cache, meta_cache, stream_cache, visit
           $ = cheerio.load(response.data);
         }
         
+        initialized = false
         index = 0
         for (const episodeUrl of episodeUrls) {
-            if (visited_urls.has(episodeUrl)) continue
-            [episode, video_url] = await get_episode(episodeUrl)
-            if(video_url==="") continue
+            if (await cache.has_subkey(id_programma, 'visited', episodeUrl)) continue
+            episode = await get_episode("https://www.la7.it/"+episodeUrl)
+            if(episode.video_url === undefined) continue
 
-            episode.id = id_programma+":"+episode.season+":"+episode.episode,
-            meta_cache[id_programma].videos.push(episode)
-            stream_cache[episode.id] = [{"title": 'Web MPEG-Dash', "url": video_url}]
-            visited_urls.add(episodeUrl)
+            if(!initialized){
+                await cache.set(id_programma, {
+                    "id": id_programma,
+                    "type": "series",
+                    "name": name,
+                    "description": description,
+                    "poster": show.poster,
+                    "background": background,
+                });
+                initialized = true
+            }
+
+            episode_id = id_programma+":"+episode.season+":"+episode.episode,
+            
+            await cache.update_field(id_programma, 'videos', episode_id, episode);
+            await cache.update_field(id_programma, 'visited', episodeUrl, new Date());
 
             if(index>10) break // cache 10 episodes by most recent at a time
             index += 1
             // console.log('added '+episodeUrl)
-        }
-
-        if(meta_cache[id_programma].videos.length === 0){
-            delete catalog_cache[id_programma]
         }
             
     } catch (error) {
@@ -178,19 +164,48 @@ async function get_episode(url) {
 
         season = +dateParts[2]
         episode_number = parseInt(dateParts[1].padStart(2, '0') + dateParts[0].padStart(2, '0'))
-        return [
-                {
+
+
+        const regex = /src:\s*({[^}]+})/;
+        const match = response.data.match(regex);
+        try {
+            const video_sources = match && match[1] ? JSON.parse(match[1]) : undefined;
+            video_url = video_sources?.m3u8 || video_sources?.dash;
+            video_url = ['mp4', 'dash', 'm3u8'].reduce((acc, key) => {
+                if (video_sources[key]) { acc[key] = video_sources[key]; } return acc;
+            }, {});
+
+            // create a dictionary with the available sources, exclude not available sources, if none set undefined
+            const keysToInclude = ['mp4', 'm3u8'];
+            const includedKeys = keysToInclude.filter(key => video_sources[key]);
+            video_url = includedKeys.length ? includedKeys.reduce((acc, key) => { acc[key] = video_sources[key]; return acc;}, {}) : undefined;
+            if(video_url.m3u8 && video_url.m3u8.includes('csmil')){
+                video_url.mpd = video_url.m3u8.replace("http://la7-vh.akamaihd.net/i", "https://awsvodpkg.iltrovatore.it/local/dash/").replace("csmil/master.m3u8", "urlset/manifest.mpd")
+            }
+            if(video_url!==undefined){
+                const convertKey = key => ({
+                    "mp4": "MPEG-4 (.mp4)",
+                    "mpd": "MPEG-Dash (.mpd)",
+                    "m3u8": "MP3 URL (.m3u8)"
+                }[key]);
+                
+                video_url = Object.entries(video_url).map(([key, url]) => ({title: convertKey(key), url}));
+            }
+
+        } catch (error) {
+            console.error(`Error parsing JSON in '${url}': `, error);
+            video_url = undefined;
+        }
+
+        return {
                     "season": season,
                     "episode": episode_number,
                     "title": $("div.infoVideoRow > h1").text(),
                     "released": date,
                     "overview": $("div.occhiello").text(),
                     "thumbnail": "https:" + $("div.contextProperty img").attr("src").replace("http:", ""),
-                },
-                "https://awsvodpkg.iltrovatore.it/local/dash/" + 
-                response.data.split("http://la7-vh.akamaihd.net/i")[1].split("csmil/master.m3u8")[0] +
-                "urlset/manifest.mpd"
-            ]
+                    "video_url": video_url
+                }
     }
     catch (error){
         console.error(error.message);

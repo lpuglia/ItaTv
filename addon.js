@@ -1,31 +1,13 @@
 const fs = require('fs');
-const scraper = require('./scraper'); // Importing the module
+const scraper = require('./scraper');
+const MongoDictionary = require('./mongodictionary');
 const stringSimilarity = require('string-similarity');
 
 const { addonBuilder } = require("stremio-addon-sdk")
 
 var manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
 
-catalog_cache = {} 
-meta_cache = {}
-stream_cache = {}
-visited_urls = new Set
-
-// Populate the catalog from somewhere
-function getSeriesCatalog(catalogName) {
-    let catalog;
-
-    switch(catalogName) {
-        case "seriesCatalog":
-            catalog = Object.values(catalog_cache) // convert dict to a list of its values
-            break
-        default:
-            catalog = []
-            break
-    }
-
-    return Promise.resolve(catalog)
-}
+cache = new MongoDictionary('cache')
 
 const builder = new addonBuilder(manifest)
 
@@ -34,7 +16,7 @@ builder.defineStreamHandler(({type, id}) => {
     switch(type) {
         case 'series':
             if(id.startsWith("itatv_")){
-                results = Promise.resolve( stream_cache[id] )
+                results = cache.getStream(id.split(':')[0], id)
             }else{
                 results = Promise.resolve( [] )
             }
@@ -43,7 +25,6 @@ builder.defineStreamHandler(({type, id}) => {
             results = Promise.resolve( [] )
             break
     }
-    // console.log(results)
     return results.then(streams => ({streams}))
 })
 
@@ -52,13 +33,12 @@ builder.defineMetaHandler(({type, id}) => {
     let results;
 	switch(type) {
         case 'series':
-            results = Promise.resolve( meta_cache[id] )
+            results = cache.getMeta(id)
             break
         default:
             results = null
             break
     }
-    // console.log(results)
     return results.then(meta => ({meta}))
 })
 
@@ -72,7 +52,7 @@ builder.defineCatalogHandler(({type, id, extra}) => {
 
     switch(type) {
         case "series":
-            results = getSeriesCatalog(id)
+            results = cache.getCatalog()
             break
         default:
             results = Promise.resolve( [] )
@@ -90,11 +70,11 @@ builder.defineCatalogHandler(({type, id, extra}) => {
     }))
  })
 
-module.exports = builder.getInterface()
-async function startScraping() {
+async function startAddon() {
+    await cache.connect()
     while (true) {
       try {
-        await scraper.scrape_la7(catalog_cache, meta_cache, stream_cache, visited_urls);
+        await scraper.scrape_la7(cache);
         // Add any additional logic or delay if needed
       } catch (error) {
         console.error('An error occurred while scraping:', error);
@@ -104,4 +84,5 @@ async function startScraping() {
     }
 }
 
-startScraping();
+startAddon();
+module.exports = builder.getInterface()
