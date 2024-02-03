@@ -3,7 +3,7 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 class MongoDictionary {
     constructor(collectionName, verbose=true) {
         const uri = `mongodb+srv://${process.env.USR}:${process.env.PWD}@${process.env.SRVR}/${process.env.DB}?retryWrites=true&w=majority`;
-
+        console.log(uri)
         this.client = new MongoClient(uri, {
             serverApi: {
             version: ServerApiVersion.v1,
