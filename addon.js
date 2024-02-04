@@ -7,7 +7,7 @@ const { addonBuilder } = require("stremio-addon-sdk")
 
 var manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
 
-cache = new MongoDictionary('cache')
+cache = new MongoDictionary('cache', process.env.VERBOSE)
 
 const builder = new addonBuilder(manifest)
 
