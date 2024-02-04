@@ -18,7 +18,6 @@ function sleep(ms) {
 async function request_url(url){
     while (true) {
         try{
-            // console.log(maxRequestsPerSecond)
             limitedAxios = rateLimit(axios.create(), {
                 maxRequests: maxRequestsPerSecond,
                 perMilliseconds: 10000,
@@ -133,14 +132,13 @@ async function get_episodes(show, cache){
                 initialized = true
             }
 
-            episode_id = id_programma+":"+episode.season+":"+episode.episode,
-            
-            await cache.update_field(id_programma, 'videos', episode_id, episode);
+            episode.id = id_programma+":"+episode.season+":"+episode.episode,
+
+            await cache.update_field(id_programma, 'videos', episode.id, episode);
             await cache.update_field(id_programma, 'visited', episodeUrl, new Date());
 
             if(index>10) break // cache 10 episodes by most recent at a time
             index += 1
-            // console.log('added '+episodeUrl)
         }
             
     } catch (error) {
