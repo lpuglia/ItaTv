@@ -110,13 +110,15 @@ builder.defineCatalogHandler(({type, id, extra}) => {
  })
 
 async function startAddon() {
-    await cache.connect()
     while (true) {
-      try {
-        await scraper.scrape_la7(cache);
-      } catch (error) {
-        console.error('An error occurred while scraping:', error);
-      }
+        try {
+            await cache.connect()
+            await scraper.scrape_la7(cache);
+        } catch (error) {
+            console.error('An error occurred while scraping:', error);
+        } finally{
+            await cache.close()
+        }
     }
 }
 
