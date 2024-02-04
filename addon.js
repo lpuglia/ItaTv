@@ -114,11 +114,8 @@ async function startAddon() {
     while (true) {
       try {
         await scraper.scrape_la7(cache);
-        // Add any additional logic or delay if needed
       } catch (error) {
         console.error('An error occurred while scraping:', error);
-        // Handle the error as needed
-        // throw error
       }
     }
 }

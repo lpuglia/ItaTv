@@ -174,7 +174,7 @@ async function get_episode(url) {
             }, {});
 
             // create a dictionary with the available sources, exclude not available sources, if none set undefined
-            const keysToInclude = ['mp4', 'm3u8'];
+            const keysToInclude = ['m3u8', 'mp4'];
             const includedKeys = keysToInclude.filter(key => video_sources[key]);
             video_url = includedKeys.length ? includedKeys.reduce((acc, key) => { acc[key] = video_sources[key]; return acc;}, {}) : undefined;
             if(video_url.m3u8 && video_url.m3u8.includes('csmil')){
@@ -182,9 +182,9 @@ async function get_episode(url) {
             }
             if(video_url!==undefined){
                 const convertKey = key => ({
-                    "mp4": "MPEG-4 (.mp4)",
                     "mpd": "MPEG-Dash (.mpd)",
-                    "m3u8": "MP3 URL (.m3u8)"
+                    "m3u8": "MP3 URL (.m3u8)",
+                    "mp4": "MPEG-4 (.mp4)",
                 }[key]);
                 
                 video_url = Object.entries(video_url).map(([key, url]) => ({title: convertKey(key), url}));
