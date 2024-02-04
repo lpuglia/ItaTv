@@ -96,7 +96,7 @@ class MongoDictionary {
 
     console.log(meta)
     this.log('Retrieved all values from MongoDB');
-    return meta;
+    return JSON.stringify(meta, null, 2);;
   }
 
   async getStream(key, video_key){
