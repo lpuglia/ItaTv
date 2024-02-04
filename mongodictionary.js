@@ -74,8 +74,8 @@ class MongoDictionary {
   async getCatalog() {
       const values = await this.dictionary.find().map(doc => doc.value).toArray();
       this.log('Retrieved all values from MongoDB');
-      console.log([values[0]])
-      return [values[0]];
+      // console.log([values[0]])
+      return values;
   }
 
   async getMeta(key) {
@@ -90,7 +90,6 @@ class MongoDictionary {
       ]).toArray();
     
     meta.videos = videos
-    console.log(meta)
     this.log('Retrieved all values from MongoDB');
     return meta
   }
