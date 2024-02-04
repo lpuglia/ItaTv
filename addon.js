@@ -24,7 +24,7 @@ var manifest = {
 
     "catalogs": [
         {
-            "id": "seriesCatalog", "type": "series", "name": "Ita TV 007",
+            "id": "seriesCatalog", "type": "series", "name": "La7 Programmi",
             "extra": [
                 { "name": "search", "isRequired": false }
             ]
