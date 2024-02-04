@@ -93,10 +93,10 @@ class MongoDictionary {
     delete meta.videos[0].overview;
     delete meta.videos[0].thumbnail;
     delete meta.videos[0].released;
-
+    meta = JSON.stringify(meta, null, 2)
     console.log(meta)
     this.log('Retrieved all values from MongoDB');
-    return JSON.stringify(meta, null, 2);;
+    return meta;
   }
 
   async getStream(key, video_key){
