@@ -90,6 +90,8 @@ class MongoDictionary {
       ]).toArray();
     
     meta.videos = [videos[0]]
+    delete meta.videos[0].overview;
+
     console.log(meta)
     this.log('Retrieved all values from MongoDB');
     return meta;
