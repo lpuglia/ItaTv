@@ -1,11 +1,50 @@
-const fs = require('fs');
 const scraper = require('./scraper');
 const MongoDictionary = require('./mongodictionary');
 const stringSimilarity = require('string-similarity');
 
 const { addonBuilder } = require("stremio-addon-sdk")
+const request = require('sync-request');
 
-var manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+function getPublicIpSync() {
+  try {
+    const response = request('GET', 'https://httpbin.org/ip');
+    const publicIp = JSON.parse(response.getBody('utf-8')).origin;
+
+    return publicIp;
+  } catch (error) {
+    throw new Error('Error fetching public IP: ' + error.message);
+  }
+}
+
+var manifest = {
+    "id": "it.itatv",
+    "version": "0.1.0",
+    "logo": "https://i.imgur.com/UFmjxIQ.png",
+    "background": "https://i.imgur.com/zoEMlhv.png",
+
+    "catalogs": [
+        {
+            "id": "seriesCatalog", "type": "series", "name": "Ita TV 007",
+            "extra": [
+                { "name": "search", "isRequired": false }
+            ]
+        }
+    ],
+    "resources": [
+		"catalog",
+		{
+			"name": "meta",
+			"types": ["series"],
+			"idPrefixes": ["itatv_"]
+		},
+		"stream"
+	],
+    "types": [
+        "series"
+    ],
+    "name": "Ita TV",
+    "description": `Selected Italian TV streams (${getPublicIpSync()})`
+}
 
 cache = new MongoDictionary('cache', process.env.VERBOSE)
 
