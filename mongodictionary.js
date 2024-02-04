@@ -89,8 +89,8 @@ class MongoDictionary {
         { $unset: 'video_url' } // Remove the video_url field
       ]).toArray();
     
-    meta.videos = videos
-
+    meta.videos = [videos[0]]
+    console.log(meta)
     this.log('Retrieved all values from MongoDB');
     return meta;
   }
