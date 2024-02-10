@@ -1,5 +1,6 @@
 const scraper = require('./scraper');
-const MongoDictionary = require('./mongodictionary');
+const { DictClient, MetaDictionary } = require('./mongodictionary');
+
 const stringSimilarity = require('string-similarity');
 
 const { addonBuilder } = require("stremio-addon-sdk")
@@ -18,17 +19,19 @@ function getPublicIpSync() {
 
 var manifest = {
     "id": "it.itatv",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "logo": "https://i.imgur.com/UFmjxIQ.png",
     "background": "https://i.imgur.com/zoEMlhv.png",
 
     "catalogs": [
         {
-            "id": "seriesCatalog", "type": "series", "name": "La7 Programmi",
-            "extra": [
-                { "name": "search", "isRequired": false }
-            ]
-        }
+            "id": "itatv_la7", "type": "series", "name": "La7 Programmi",
+            "extra": [{ "name": "search", "isRequired": false }]
+        },
+        {
+            "id": "itatv_la7d", "type": "series", "name": "La7D Programmi",
+            "extra": [{ "name": "search", "isRequired": false }]
+        },
     ],
     "resources": [
 		"catalog",
@@ -46,7 +49,8 @@ var manifest = {
     "description": `Selected Italian TV streams (${getPublicIpSync()})`
 }
 
-cache = new MongoDictionary('cache', process.env.VERBOSE)
+client = new DictClient()
+cache = new MetaDictionary(process.env.VERBOSE)
 
 const builder = new addonBuilder(manifest)
 
@@ -55,7 +59,7 @@ builder.defineStreamHandler(({type, id}) => {
     switch(type) {
         case 'series':
             if(id.startsWith("itatv_")){
-                results = cache.getStream(id.split(':')[0], id)
+                results = cache.getStream(...id.split(':'))
             }else{
                 results = Promise.resolve( [] )
             }
@@ -68,11 +72,11 @@ builder.defineStreamHandler(({type, id}) => {
 })
 
 builder.defineMetaHandler(({type, id}) => {
-
+    // console.log(type, id)
     let results;
 	switch(type) {
         case 'series':
-            results = cache.getMeta(id)
+            results = cache.getMeta(...id.split(':'))
             break
         default:
             results = null
@@ -88,10 +92,10 @@ function isSimilar(str1, str2, threshold) {
 
 builder.defineCatalogHandler(({type, id, extra}) => {
     let results;
-
+    // console.log(type, id, extra)
     switch(type) {
         case "series":
-            results = cache.getCatalog()
+            results = cache.getCatalog(id)
             break
         default:
             results = Promise.resolve( [] )
@@ -110,14 +114,18 @@ builder.defineCatalogHandler(({type, id, extra}) => {
  })
 
 async function startAddon() {
+    // await client.connect()
+    // await cache.get_collection(client)
     while (true) {
         try {
-            await cache.connect()
-            await scraper.scrape_la7(cache);
+            await client.connect()
+            await cache.get_collection(client)
+            await scraper.scrape_la7(cache, 'itatv_la7', la7d=false);
+            await scraper.scrape_la7(cache, 'itatv_la7d', la7d=true);
         } catch (error) {
             console.error('An error occurred while scraping:', error);
         } finally{
-            await cache.close()
+            await client.close()
         }
     }
 }

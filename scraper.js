@@ -6,7 +6,7 @@ let maxRequestsPerSecond = 2;
 
 let limitedAxios = rateLimit(axios.create(), {
   maxRequests: maxRequestsPerSecond,
-  perMilliseconds: 10000,
+  perMilliseconds: 1000,
 });
 
 function sleep(ms) {
@@ -18,13 +18,14 @@ function sleep(ms) {
 async function request_url(url){
     while (true) {
         try{
-            limitedAxios = rateLimit(axios.create(), {
-                maxRequests: maxRequestsPerSecond,
-                perMilliseconds: 10000,
-            });
-
             let response = await limitedAxios.get(url);
-            if(maxRequestsPerSecond<100) maxRequestsPerSecond*=2
+            // limitedAxios = rateLimit(axios.create(), {
+            //     maxRequests: maxRequestsPerSecond,
+            //     perMilliseconds: 10000,
+            // });
+
+            // let response = await limitedAxios.get(url);
+            // if(maxRequestsPerSecond<100) maxRequestsPerSecond*=2
             return response
         }catch (error){
             if (error.response) {
@@ -44,9 +45,14 @@ async function request_url(url){
     }
 }
 
-async function scrape_la7(cache) {
+async function scrape_la7(cache, catalog_id, la7d) {
     try {
-        let response = await request_url("https://www.la7.it/programmi#P");
+        let response = undefined
+        if(la7d){
+            response = await request_url("https://www.la7.it/programmi-la7d");
+        }else{
+            response = await request_url("https://www.la7.it/programmi");
+        }
         let $ = cheerio.load(response.data);
 
         const containerDiv = $('#container-programmi-list');
@@ -55,14 +61,17 @@ async function scrape_la7(cache) {
             const anchor = $(element).find('a')
             if (anchor.length !== 0){
                 const name = anchor.attr('href').substring(1)
-                const poster = $(element).find('div.image-bg').attr('data-background-image');
+                poster = $(element).find('div.image-bg').attr('data-background-image');
+                if(!poster.startsWith("https://"))
+                    poster = "https://www.la7.it/" + poster
+    
                 shows.push({name, poster});
             }
         });
 
         for (const show of shows) {
             console.log(show.name)
-            await get_episodes(show, cache)
+            await get_episodes(catalog_id, show, cache)
         };
 
 
@@ -72,19 +81,21 @@ async function scrape_la7(cache) {
     }
 }
 
-async function get_episodes(show, cache){
+async function get_episodes(catalog_id, show, cache){
 
     try {
         let response = await request_url("https://www.la7.it/" + show.name);
         let $ = cheerio.load(response.data);
 
         const match = $('#headerProperty').attr('style').match(/background-image\s*:\s*url\s*\(\s*'([^']*)'\s*\)/);
-        const background = match && match[1];
+        let background = match && match[1];
+        if(!background.startsWith("https://"))
+            background = "https://www.la7.it/" + background
         const name = $('.fascia_banner .in-fascia-banner').eq(0).text().trim();
         // const info = $('.fascia_banner .in-fascia-banner').eq(1).text().trim();
         const description = $('.fascia_banner .testo p').text().trim();
 
-        id_programma = "itatv_" + show.name
+        id_programma = show.name
         const url = "https://www.la7.it/" + show.name + '/rivedila7'
 
         response = await request_url(url);
@@ -116,13 +127,13 @@ async function get_episodes(show, cache){
         initialized = false
         index = 0
         for (const episodeUrl of episodeUrls) {
-            if (await cache.has_subkey(id_programma, 'visited', episodeUrl)) continue
+            if (await cache.has_subkey(episodeUrl)) continue
             episode = await get_episode("https://www.la7.it/"+episodeUrl)
             if(episode.video_url === undefined) continue
 
             if(!initialized){
-                await cache.set(id_programma, {
-                    "id": id_programma,
+                await cache.update_catalogs(catalog_id, `${catalog_id}:${id_programma}`, {
+                    "id": `${catalog_id}:${id_programma}`,
                     "type": "series",
                     "name": name,
                     "description": description,
@@ -132,10 +143,10 @@ async function get_episodes(show, cache){
                 initialized = true
             }
 
-            episode.id = id_programma+":"+episode.season+":"+episode.episode,
+            episode.id = `${catalog_id}:${id_programma}:${episode.season}:${episode.episode}`,
 
-            await cache.update_field(id_programma, 'videos', episode.id, episode);
-            await cache.update_field(id_programma, 'visited', episodeUrl, new Date());
+            await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
+            await cache.update_visited(episodeUrl, new Date());
 
             if(index>10) break // cache 10 episodes by most recent at a time
             index += 1
