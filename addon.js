@@ -1,16 +1,13 @@
-const scraper = require('./scraper');
-const MetaDictionary = require('./mongodictionary');
-
 const stringSimilarity = require('string-similarity');
-
 const { addonBuilder } = require("stremio-addon-sdk")
 const request = require('sync-request');
+const la7 = require('./scraper/la7');
+const MetaDictionary = require('./mongodictionary');
 
 function getPublicIpSync() {
   try {
     const response = request('GET', 'https://httpbin.org/ip');
     const publicIp = JSON.parse(response.getBody('utf-8')).origin;
-
     return publicIp;
   } catch (error) {
     throw new Error('Error fetching public IP: ' + error.message);
@@ -24,14 +21,6 @@ var manifest = {
     "background": "https://i.imgur.com/zoEMlhv.png",
 
     "catalogs": [
-        {
-            "id": "itatv_la7", "type": "series", "name": "La7 Programmi",
-            "extra": [{ "name": "search", "isRequired": false }]
-        },
-        {
-            "id": "itatv_la7d", "type": "series", "name": "La7D Programmi",
-            "extra": [{ "name": "search", "isRequired": false }]
-        },
     ],
     "resources": [
 		"catalog",
@@ -48,13 +37,11 @@ var manifest = {
     "name": "Ita TV",
     "description": `Selected Italian TV streams (${getPublicIpSync()})`
 }
-
-cache = new MetaDictionary(process.env.VERBOSE)
+manifest.catalogs.push(...la7.catalogs);
 
 const builder = new addonBuilder(manifest)
 
 builder.defineStreamHandler(({type, id}) => {
- 
     switch(type) {
         case 'series':
             if(id.startsWith("itatv_")){
@@ -71,7 +58,6 @@ builder.defineStreamHandler(({type, id}) => {
 })
 
 builder.defineMetaHandler(({type, id}) => {
-    // console.log(type, id)
     let results;
 	switch(type) {
         case 'series':
@@ -84,14 +70,13 @@ builder.defineMetaHandler(({type, id}) => {
     return results.then(meta => ({meta}))
 })
 
-function isSimilar(str1, str2, threshold) {
-    const similarity = stringSimilarity.compareTwoStrings(str1, str2);
-    return similarity >= threshold;
-}
-
-
 
 builder.defineCatalogHandler(({type, id, extra}) => {
+    function isSimilar(str1, str2, threshold) {
+        const similarity = stringSimilarity.compareTwoStrings(str1, str2);
+        return similarity >= threshold;
+    }
+    
     const isIdInCatalog = (manifest, idToCheck) => manifest.catalogs.some(catalog => catalog.id === idToCheck);
     let results;
     // console.log(type, id, extra)
@@ -119,10 +104,10 @@ builder.defineCatalogHandler(({type, id, extra}) => {
     }))
  })
 
+cache = new MetaDictionary(process.env.VERBOSE)
 async function startAddon() {
     while (true) {
-        await scraper.scrape_la7(cache, 'itatv_la7', la7d=false);
-        await scraper.scrape_la7(cache, 'itatv_la7d', la7d=true);
+        await la7.scrape(cache)
     }
 }
 

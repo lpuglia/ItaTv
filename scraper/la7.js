@@ -1,48 +1,20 @@
-const axios = require('axios');
-const rateLimit = require('axios-rate-limit');
 const cheerio = require('cheerio');
+const {request_url} = require('./scrapermanager');
 
-let maxRequestsPerSecond = 2;
-
-let limitedAxios = rateLimit(axios.create(), {
-  maxRequests: maxRequestsPerSecond,
-  perMilliseconds: 1000,
-});
-
-function sleep(ms) {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  }
-
-async function request_url(url){
-    while (true) {
-        try{
-            let response = await limitedAxios.get(url);
-            // limitedAxios = rateLimit(axios.create(), {
-            //     maxRequests: maxRequestsPerSecond,
-            //     perMilliseconds: 10000,
-            // });
-
-            // let response = await limitedAxios.get(url);
-            // if(maxRequestsPerSecond<100) maxRequestsPerSecond*=2
-            return response
-        }catch (error){
-            if (error.response) {
-                console.error('HTTP status code:', error.response.status);
-                if(error.response.status===429){
-                    if(maxRequestsPerSecond>2) maxRequestsPerSecond/=2
+catalogs = [
+                {
+                    "id": "itatv_la7", "type": "series", "name": "La7 Programmi",
+                    "extra": [{ "name": "search", "isRequired": false }]
+                },
+                {
+                    "id": "itatv_la7d", "type": "series", "name": "La7D Programmi",
+                    "extra": [{ "name": "search", "isRequired": false }]
                 }
-                if(error.response.status===404){
-                    throw error
-                }
-                await sleep(10000/maxRequestsPerSecond);
-            }else{
-                console.error(error.message);
-            }
-            // throw error
-        }
-    }
+            ]
+
+async function scrape(cache){
+    await scrape_la7(cache, 'itatv_la7', la7d=false);
+    await scrape_la7(cache, 'itatv_la7d', la7d=true);
 }
 
 async function scrape_la7(cache, catalog_id, la7d) {
@@ -223,6 +195,4 @@ async function get_episode(url) {
 
 }
 
-module.exports = {
-    scrape_la7: scrape_la7
-};
+module.exports = { catalogs, scrape };
