@@ -5,26 +5,27 @@ class DictClient {
     static database = null;
     static isConnected = false;
     static collectionCache = {};
+    static connectingPromise = null; // Added to handle concurrent connection attempts
 
     static async connect() {
         if (!this.isConnected) {
-            const uri = `mongodb+srv://${process.env.USR}:${process.env.PASSWD}@${process.env.SRVR}/${process.env.DB}?retryWrites=true&w=majority`;
-            this.client = new MongoClient(uri, {
-                serverApi: {
-                    version: ServerApiVersion.v1,
-                    strict: true,
-                    deprecationErrors: true,
-                }
-            });
-            try {
-                await this.client.connect();
-                this.database = this.client.db();
-                this.isConnected = true;
-            } catch (error) {
-                console.error("Failed to connect to MongoDB:", error);
-                this.isConnected = false;
-                throw error; // Rethrow to handle upstream
+            if (!this.connectingPromise) { // Check if a connection attempt is already in progress
+                this.connectingPromise = (async () => {
+                    const uri = `mongodb+srv://${process.env.USR}:${process.env.PASSWD}@${process.env.SRVR}/${process.env.DB}?retryWrites=true&w=majority`;
+                    this.client = new MongoClient(uri, {
+                        serverApi: {
+                            version: ServerApiVersion.v1,
+                            strict: true,
+                            deprecationErrors: true,
+                        }
+                    });
+                    await this.client.connect();
+                    this.database = this.client.db();
+                    this.isConnected = true;
+                    this.connectingPromise = null; // Reset after connection is established
+                })();
             }
+            await this.connectingPromise; // Wait for the connection to be established
         }
     }
 
