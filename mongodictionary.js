@@ -59,19 +59,17 @@ class MetaDictionary {
     }
 
     async getCatalog(catalog_id) {
+        const shuffleArray = arr => arr.map(a => [Math.random(), a]).sort((a, b) => a[0] - b[0]).map(a => a[1]);
+
         const catalogs = await DictClient.get_collection("catalogs")
-        const catalog = await catalogs.aggregate([
+        let catalog = await catalogs.aggregate([
             { $match: { key: catalog_id } },
             { $project: { _id: 0, metas: { $objectToArray: '$metas' } } },
             { $unwind: '$metas' },
             { $replaceRoot: { newRoot: '$metas.v' } }
         ]).toArray();
-        try{
-            catalog[0].name = `${new Date()}`
-        }catch (error) {
-            console.error(error.message, catalog_id, catalog[0]);
-            throw error
-        }
+        catalog = shuffleArray(catalog)
+        catalog[0].name = `${new Date()}`
         return catalog
     }
 

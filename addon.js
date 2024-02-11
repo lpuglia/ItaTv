@@ -89,12 +89,19 @@ function isSimilar(str1, str2, threshold) {
     return similarity >= threshold;
 }
 
+
+
 builder.defineCatalogHandler(({type, id, extra}) => {
+    const isIdInCatalog = (manifest, idToCheck) => manifest.catalogs.some(catalog => catalog.id === idToCheck);
     let results;
     // console.log(type, id, extra)
     switch(type) {
         case "series":
-            results = cache.getCatalog(id)
+            if(isIdInCatalog(manifest, id)){
+                results = cache.getCatalog(id)
+            }else{
+                results = Promise.resolve( [] )
+            }
             break
         default:
             results = Promise.resolve( [] )
