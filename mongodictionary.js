@@ -1,92 +1,22 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
-
-class DictClient {
-    constructor(){
-        const uri = `mongodb+srv://${process.env.USR}:${process.env.PASSWD}@${process.env.SRVR}/${process.env.DB}?retryWrites=true&w=majority`;
-        // console.log(uri)
-        this.client = new MongoClient(uri, {
-            serverApi: {
-            version: ServerApiVersion.v1,
-            strict: true,
-            deprecationErrors: true,
-            }
-        });
-    }
-    
-    async connect() {
-        await this.client.connect();
-        this.database = this.client.db();
-    }
-
-    async close() {
-        await this.client.close();
-    }
-
-    async get_collection(collectionName) {
-        if (!this.client || !this.database) {
-            throw new Error("Client is not connected or database is not set.");
-        }
-        
-        try {
-            const collections = await this.database.listCollections({}, { nameOnly: true }).toArray();
-            const collectionNames = collections.map(col => col.name);
-            if (!collectionNames.includes(collectionName)) {
-                console.warn(`Collection ${collectionName} does not exist. It will be created upon first insert.`);
-            }
-            
-            return this.database.collection(collectionName);
-        } catch (error) {
-            throw new Error(`Error accessing collection ${collectionName}: ${error.message}`);
-        }
-    }
-}
-
+const DictClient = require('./dictclient');
 
 class MetaDictionary {
     constructor(verbose) {
-      if(verbose===undefined) verbose = false
-        this.verbose = verbose
-        this.meta = null; // Will hold the MongoDB collection reference
-        this.catalogs = null; // Will hold the MongoDB collection reference
-  }
-
-  log(message) {
-    if (this.verbose==="true") {
-        console.log(message);
+        if(verbose===undefined) verbose = false
+            this.verbose = verbose
     }
-  }
-  
-  async get_collection(client){
-    this.videos = await client.get_collection("videos");
-    this.catalogs = await client.get_collection("catalogs");
-    this.visited = await client.get_collection("visited");
-  }
 
-//   async set(key, value) {
-//     const result = await this.catalogs.updateOne({ key }, { $set: { value } }, { upsert: true });
-//     this.log(`Set key '${key}' in Catalog`);
-//     return result;
-//   }
-
-//   async update_field(key, fieldName, subKey, value) {
-//     const updateFields = {};
-//     updateFields[`${fieldName}.${subKey}`] = value;
-    
-//     const result = await this.dictionary.updateOne(
-//         { key },
-//         { $set: updateFields },
-//         { upsert: true }
-//     );
-    
-//     this.log(`Updated field '${fieldName}.${subKey}' for key '${key}' in MongoDB`);
-//     return result;
-//   }
+    log(message) {
+        if (this.verbose==="true") {
+            console.log(message);
+        }
+    }
   
     async update_catalogs(key, subKey, value) {
         const updateFields = {};
         updateFields[`metas.${subKey}`] = value;
-
-        const result = await this.catalogs.updateOne(
+        const catalogs = await DictClient.get_collection("catalogs")
+        const result = await catalogs.updateOne(
             { key },
             { $set: updateFields },
             { upsert: true }
@@ -98,8 +28,8 @@ class MetaDictionary {
     async update_videos(key, subKey, value) {
         const updateFields = {};
         updateFields[`videos.${subKey}`] = value;
-
-        const result = await this.videos.updateOne(
+        const videos = await DictClient.get_collection("videos")
+        const result = await videos.updateOne(
             { key },
             { $set: updateFields },
             { upsert: true }
@@ -109,35 +39,28 @@ class MetaDictionary {
         return result;
     }
 
-  async update_visited(key, value) {
+    async update_visited(key, value) {
+        const visited = await DictClient.get_collection("visited")
+        const result = await visited.updateOne(
+            { key },
+            { $set: { timestamp: value } },
+            { upsert: true }
+        );
+        
+        this.log(`Updated visited '${key}' in MongoDB`);
+        return result;
+    }
 
-    const result = await this.visited.updateOne(
-        { key },
-        { $set: { timestamp: value } },
-        { upsert: true }
-    );
-    
-    this.log(`Updated visited '${key}' in MongoDB`);
-    return result;
-  }
+    async has_subkey(subKey) {
+        const visited = await DictClient.get_collection("visited")
+        const count = await visited.countDocuments({ "key": subKey });
+        this.log(`Check if subkey '${subKey}' is visited in MongoDB`);
+        return count > 0;
+    }
 
-  async has_subkey(subKey) {
-    const count = await this.visited.countDocuments({ [subKey]: { $exists: true } });
-
-    this.log(`Check if subkey '${subKey}' is visited in MongoDB`);
-    return count > 0;
-  }
-
-//   async getCatalog() {
-//       this.log('Retrieving all values from MongoDB');
-//       const values = await this.catalogs.find().map(doc => doc.value).toArray();
-//       this.log('Retrieved all values from MongoDB');
-//       // console.log(values)
-//       values[0].name = `${new Date()}`
-//       return values;
-//   }
     async getCatalog(catalog_id) {
-        const catalog = await this.catalogs.aggregate([
+        const catalogs = await DictClient.get_collection("catalogs")
+        const catalog = await catalogs.aggregate([
             { $match: { key: catalog_id } },
             { $project: { _id: 0, metas: { $objectToArray: '$metas' } } },
             { $unwind: '$metas' },
@@ -149,13 +72,14 @@ class MetaDictionary {
 
     async getMeta(catalog_id, meta_key) {
         const fullkey = [catalog_id, meta_key].join(":")
-        // const meta = (await this.catalogs.findOne({ key }, { projection: { _id: 0, value: 1 } })).value;
-        let meta = await this.catalogs.findOne(
+        const catalogs = await DictClient.get_collection("catalogs")
+        let meta = await catalogs.findOne(
             { key: catalog_id, [`metas.${fullkey}`]: { $exists: true } },
             { projection: { [`metas.${fullkey}`]: 1, _id: 0 } }
         )
         meta = meta.metas[fullkey];
-        const videos = await this.videos.aggregate([
+        const videos_collection = await DictClient.get_collection("videos")
+        const videos = await videos_collection.aggregate([
             { $match: { key: fullkey } },
             { $project: { _id: 0, videos: { $objectToArray: '$videos' } } },
             { $unwind: '$videos' },
@@ -168,18 +92,19 @@ class MetaDictionary {
         return meta
     }
 
-  async getStream(catalog_id, meta_key, season, episode){
-    const metakey = [catalog_id, meta_key].join(":")
-    const fullkey = [catalog_id, meta_key, season, episode].join(":")
-    let streams = await this.videos.findOne(
-        { key: metakey, [`videos.${fullkey}.video_url`]: { $exists: true } },
-        { projection: { [`videos.${fullkey}.video_url`]: 1, _id: 0 } }
-      );
-    // console.log(streams)
-    streams = streams.videos[fullkey].video_url
-    return streams
-  }
+    async getStream(catalog_id, meta_key, season, episode){
+        const metakey = [catalog_id, meta_key].join(":")
+        const fullkey = [catalog_id, meta_key, season, episode].join(":")
+        const videos = await DictClient.get_collection("videos")
+        let streams = await videos.findOne(
+            { key: metakey, [`videos.${fullkey}.video_url`]: { $exists: true } },
+            { projection: { [`videos.${fullkey}.video_url`]: 1, _id: 0 } }
+        );
+        // console.log(streams)
+        streams = streams.videos[fullkey].video_url
+        return streams
+    }
 
 }
 
-module.exports = {DictClient,MetaDictionary};
+module.exports = MetaDictionary

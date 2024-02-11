@@ -1,5 +1,5 @@
 const scraper = require('./scraper');
-const { DictClient, MetaDictionary } = require('./mongodictionary');
+const MetaDictionary = require('./mongodictionary');
 
 const stringSimilarity = require('string-similarity');
 
@@ -49,7 +49,6 @@ var manifest = {
     "description": `Selected Italian TV streams (${getPublicIpSync()})`
 }
 
-client = new DictClient()
 cache = new MetaDictionary(process.env.VERBOSE)
 
 const builder = new addonBuilder(manifest)
@@ -114,19 +113,9 @@ builder.defineCatalogHandler(({type, id, extra}) => {
  })
 
 async function startAddon() {
-    // await client.connect()
-    // await cache.get_collection(client)
     while (true) {
-        try {
-            await client.connect()
-            await cache.get_collection(client)
-            await scraper.scrape_la7(cache, 'itatv_la7', la7d=false);
-            await scraper.scrape_la7(cache, 'itatv_la7d', la7d=true);
-        } catch (error) {
-            console.error('An error occurred while scraping:', error);
-        } finally{
-            await client.close()
-        }
+        await scraper.scrape_la7(cache, 'itatv_la7', la7d=false);
+        await scraper.scrape_la7(cache, 'itatv_la7d', la7d=true);
     }
 }
 
