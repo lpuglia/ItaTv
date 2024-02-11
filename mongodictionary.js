@@ -22,8 +22,22 @@ class DictClient {
         await this.client.close();
     }
 
-    get_collection(collectionName){
-        return this.database.collection(collectionName);
+    async get_collection(collectionName) {
+        if (!this.client || !this.database) {
+            throw new Error("Client is not connected or database is not set.");
+        }
+        
+        try {
+            const collections = await this.database.listCollections({}, { nameOnly: true }).toArray();
+            const collectionNames = collections.map(col => col.name);
+            if (!collectionNames.includes(collectionName)) {
+                console.warn(`Collection ${collectionName} does not exist. It will be created upon first insert.`);
+            }
+            
+            return this.database.collection(collectionName);
+        } catch (error) {
+            throw new Error(`Error accessing collection ${collectionName}: ${error.message}`);
+        }
     }
 }
 
