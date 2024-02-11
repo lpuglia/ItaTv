@@ -14,20 +14,12 @@ class DictClient {
     }
     
     async connect() {
-        try {
-            await this.client.connect();
-            this.database = this.client.db();
-        } catch (error) {
-            console.error('Error connecting to MongoDB:', error);
-        }
+        await this.client.connect();
+        this.database = this.client.db();
     }
 
     async close() {
-        try {
-            await this.client.close();
-        } catch (error) {
-            console.error('Error closing MongoDB connection:', error);
-        }
+        await this.client.close();
     }
 
     get_collection(collectionName){
