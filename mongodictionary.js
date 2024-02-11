@@ -66,7 +66,12 @@ class MetaDictionary {
             { $unwind: '$metas' },
             { $replaceRoot: { newRoot: '$metas.v' } }
         ]).toArray();
-        catalog[0].name = `${new Date()}`
+        try{
+            catalog[0].name = `${new Date()}`
+        }catch (error) {
+            console.error(error.message, catalog_id, catalog[0]);
+            throw error
+        }
         return catalog
     }
 
