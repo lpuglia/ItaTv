@@ -190,7 +190,7 @@ async function get_episode(url) {
     }
     catch (error){
         console.error(error.message);
-        return [{},""]
+        return {}
     }
 
 }

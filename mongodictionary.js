@@ -26,9 +26,20 @@ class MetaDictionary {
     }
 
     async update_videos(key, subKey, value) {
+        const videos = await DictClient.get_collection("videos")
+
+        const existingDoc = await videos.findOne({ key });
+
+        // Check for key collisions
+        if (existingDoc && existingDoc.videos && existingDoc.videos[subKey]) {
+            const existingVideoTitle = existingDoc.videos[subKey].title;
+            if(existingVideoTitle!==value.title){
+                console.log(0,`Existing title for '${subKey}' is '${existingVideoTitle}' and it is different from ${value.title}`)
+            }
+        }
+
         const updateFields = {};
         updateFields[`videos.${subKey}`] = value;
-        const videos = await DictClient.get_collection("videos")
         const result = await videos.updateOne(
             { key },
             { $set: updateFields },
@@ -69,7 +80,7 @@ class MetaDictionary {
             { $replaceRoot: { newRoot: '$metas.v' } }
         ]).toArray();
         catalog = shuffleArray(catalog)
-        catalog[0].name = `${new Date()}`
+        catalog[0].description = `${new Date()} ` + catalog[0].description
         return catalog
     }
 
@@ -81,6 +92,7 @@ class MetaDictionary {
             { projection: { [`metas.${fullkey}`]: 1, _id: 0 } }
         )
         meta = meta.metas[fullkey];
+        meta.description = `${new Date()} ` + meta.description
         const videos_collection = await DictClient.get_collection("videos")
         const videos = await videos_collection.aggregate([
             { $match: { key: fullkey } },

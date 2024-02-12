@@ -2,6 +2,7 @@ const stringSimilarity = require('string-similarity');
 const { addonBuilder } = require("stremio-addon-sdk")
 const request = require('sync-request');
 const la7 = require('./scraper/la7');
+const rai = require('./scraper/rai');
 const MetaDictionary = require('./mongodictionary');
 
 function getPublicIpSync() {
@@ -38,6 +39,7 @@ var manifest = {
     "description": `Selected Italian TV streams (${getPublicIpSync()})`
 }
 manifest.catalogs.push(...la7.catalogs);
+manifest.catalogs.push(...rai.catalogs);
 
 const builder = new addonBuilder(manifest)
 
@@ -108,6 +110,7 @@ cache = new MetaDictionary(process.env.VERBOSE)
 async function startAddon() {
     while (true) {
         await la7.scrape(cache)
+        await rai.scrape(cache)
     }
 }
 
