@@ -103,7 +103,7 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
         }
         
         initialized = false
-        index = 0
+        // index = 0
         for (const episodeUrl of episodeUrls) {
             if (await cache.has_subkey(episodeUrl)) continue
             episode = await get_episode("https://www.la7.it/"+episodeUrl)
@@ -126,8 +126,8 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
             await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
             await cache.update_visited(episodeUrl, new Date());
 
-            if(index>10) break // cache 10 episodes by most recent at a time
-            index += 1
+            // if(index>10) break // cache 10 episodes by most recent at a time
+            // index += 1
         }
             
     } catch (error) {

@@ -105,18 +105,19 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
                                 if(!fullsearch) break
                             }
                         }
-                        if(!fullsearch) break
+                        if(!fullsearch && episode_urls.length>0) break
                     }
-                    if(!fullsearch) break
+                    if(!fullsearch && episode_urls.length>0) break
                 }
             };
 
             initialized = false
             // index = 0
             episode_list = []
-            for(let episode_url of episode_urls){
+            for(const episode_url of episode_urls){
                 if (await cache.has_subkey(episode_url)) continue
                 episode = await get_episode(episode_url)
+                console.log(episode)
                 if(episode.video_url === undefined) continue
 
                 if(!initialized){
