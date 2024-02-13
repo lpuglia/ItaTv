@@ -73,15 +73,28 @@ builder.defineMetaHandler(({type, id}) => {
 })
 
 
+function getConsecutiveWordSets(inputString, n) {
+    const words = inputString.split(' ');
+    return words.length < Math.max(n,4) ? [] : Array.from({length: words.length - n + 1}, (_, i) => words.slice(i, i + n).join(' '));
+}
+
 builder.defineCatalogHandler(({type, id, extra}) => {
-    function isSimilar(str1, str2, threshold) {
+    function isSimilarTitle(str1, str2, threshold) {
         const similarity = stringSimilarity.compareTwoStrings(str1, str2);
         return similarity >= threshold;
+    }
+    function isSimilarDesc(str1, str2, threshold) {
+        for(word of getConsecutiveWordSets(str1, str2.split(" ").length)){
+            if(stringSimilarity.compareTwoStrings(word, str2) >= threshold){
+                return true
+            }
+        }
+        return false
     }
     
     const isIdInCatalog = (manifest, idToCheck) => manifest.catalogs.some(catalog => catalog.id === idToCheck);
     let results;
-    // console.log(type, id, extra)
+
     switch(type) {
         case "series":
             if(isIdInCatalog(manifest, id)){
@@ -96,7 +109,7 @@ builder.defineCatalogHandler(({type, id, extra}) => {
     }
     if(extra.search) {
         return results.then(items => ({
-            metas: items.filter(meta => isSimilar(meta.name.toLowerCase(), extra.search.toLowerCase(), 0.5))
+            metas: items.filter(meta => isSimilarTitle(meta.name.toLowerCase(), extra.search.toLowerCase(), 0.5) || isSimilarDesc(meta.description.toLowerCase(), extra.search.toLowerCase(), 0.8))
         }))
     }
 
@@ -107,12 +120,14 @@ builder.defineCatalogHandler(({type, id, extra}) => {
  })
 
 cache = new MetaDictionary(process.env.VERBOSE)
+
 async function startAddon() {
     while (true) {
-        await la7.scrape(cache)
-        await rai.scrape(cache)
+        fullsearch = process.env.FULLSEARCH===undefined ? false : process.env.FULLSEARCH;
+        await la7.scrape(cache, fullsearch)
+        await rai.scrape(cache, fullsearch)
     }
 }
-
 startAddon();
+
 module.exports = builder.getInterface()

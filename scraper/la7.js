@@ -4,20 +4,26 @@ const {request_url} = require('./scrapermanager');
 catalogs = [
                 {
                     "id": "itatv_la7", "type": "series", "name": "La7 Programmi",
-                    "extra": [{ "name": "search", "isRequired": false }]
+                    "extra": [
+                        { "name": "search", "isRequired": false },
+                        { "name": "skip", "isRequired": false }
+                    ]
                 },
                 {
                     "id": "itatv_la7d", "type": "series", "name": "La7D Programmi",
-                    "extra": [{ "name": "search", "isRequired": false }]
+                    "extra": [
+                        { "name": "search", "isRequired": false },
+                        { "name": "skip", "isRequired": false }
+                    ]
                 }
             ]
 
-async function scrape(cache){
-    await scrape_la7(cache, 'itatv_la7', la7d=false);
-    await scrape_la7(cache, 'itatv_la7d', la7d=true);
+async function scrape(cache, fullsearch){
+    await scrape_la7(cache, 'itatv_la7', la7d=false, fullsearch);
+    await scrape_la7(cache, 'itatv_la7d', la7d=true, fullsearch);
 }
 
-async function scrape_la7(cache, catalog_id, la7d) {
+async function scrape_la7(cache, catalog_id, la7d, fullsearch) {
     try {
         let response = undefined
         if(la7d){
@@ -43,7 +49,7 @@ async function scrape_la7(cache, catalog_id, la7d) {
 
         for (const show of shows) {
             console.log(show.name)
-            await get_episodes(catalog_id, show, cache)
+            await get_episodes(catalog_id, show, cache, fullsearch)
         };
 
 
@@ -53,7 +59,7 @@ async function scrape_la7(cache, catalog_id, la7d) {
     }
 }
 
-async function get_episodes(catalog_id, show, cache){
+async function get_episodes(catalog_id, show, cache, fullsearch){
 
     try {
         let response = await request_url("https://www.la7.it/" + show.name);
@@ -84,16 +90,16 @@ async function get_episodes(catalog_id, show, cache){
         let counter = 1;
     
         while (true) {
-          const episodeLinks = $("div.common-item > a");
-          if (episodeLinks.length === 0) break;
-    
-          episodeLinks.each((index, element) => {
-            episodeUrls.push($(element).attr("href"));
-          });
-          counter += 1;
+            const episodeLinks = $("div.common-item > a");
+            if (episodeLinks.length === 0) break;
+            for(episodeLink of episodeLinks){
+                episodeUrls.push($(episodeLink).attr("href"));
+                if(!fullsearch) break
+            }
+            counter += 1;
 
-          response = await request_url(url + "?page=" + counter);
-          $ = cheerio.load(response.data);
+            response = await request_url(url + "?page=" + counter);
+            $ = cheerio.load(response.data);
         }
         
         initialized = false
@@ -115,7 +121,7 @@ async function get_episodes(catalog_id, show, cache){
                 initialized = true
             }
 
-            episode.id = `${catalog_id}:${id_programma}:${episode.season}:${episode.episode}`,
+            episode.id = `${catalog_id}:${id_programma}:${episode.season}:${episode.episode}`
 
             await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
             await cache.update_visited(episodeUrl, new Date());

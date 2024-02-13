@@ -4,16 +4,20 @@ const {request_url} = require('./scrapermanager');
 catalogs = [
                 {
                     "id": "itatv_rai_programmi", "type": "series", "name": "Rai Programmi",
-                    "extra": [{ "name": "search", "isRequired": false }]
+                    "extra": [
+                        { "name": "search", "isRequired": false },
+                        { "name": "skip", "isRequired": false }
+                    ]
                 }
             ]
 
-async function scrape(cache){
-    await scrape_rai_programmi(cache, 'itatv_rai_programmi');
+async function scrape(cache, fullsearch){
+    await scrape_rai_programmi(cache, 'itatv_rai_programmi', fullsearch);
 }
 
-async function scrape_rai_programmi(cache, catalog_id) {
+async function scrape_rai_programmi(cache, catalog_id, fullsearch) {
     urls_programmi = [
+                        'https://www.raiplay.it/raccolta/Programmi-in-esclusiva-f62a210b-d5a5-4b0d-ae73-1625c1da15b6.html',
                         'https://www.raiplay.it/genere/PROGRAMMI---Costume-e-Societa-8875c1f7-799b-402b-92f9-791bde8fb141.html',
                         'https://www.raiplay.it/genere/Programmi---Crime-d8b77fff-5018-4ad6-9d4d-40d7dc548086.html',
                         'https://www.raiplay.it/genere/Giochi--Quiz-ad635fda-4dd5-445f-87ff-64d60404f1ca.html',
@@ -48,8 +52,8 @@ async function scrape_rai_programmi(cache, catalog_id) {
 
             for (const show of shows) {
                 console.log(show.name)
-                // if(show.name==="Blob"){
-                await get_episodes(catalog_id, show, cache)
+                // if(show.name==="Gazebo"){
+                    await get_episodes(catalog_id, show, cache, fullsearch)
                 // }
             };
         }
@@ -59,7 +63,7 @@ async function scrape_rai_programmi(cache, catalog_id) {
     }
 }
 
-async function get_episodes(catalog_id, show, cache){
+async function get_episodes(catalog_id, show, cache, fullsearch){
     try {
         console.log(`https://www.raiplay.it${show.url}.json`)
         const response = await request_url(`https://www.raiplay.it${show.url}.json`);
@@ -74,18 +78,23 @@ async function get_episodes(catalog_id, show, cache){
                 block.sets.forEach((set) => {
                     const episodes_url = `https://www.raiplay.it${show.url}/${block.id}/${set.id}/episodes.json`;
                     const name = [block.name, set.name]
-                    if (block.name.includes("Puntate") || set.name.includes("Puntate") || block.sets.length==1) {
+                    if (block.name.includes("Puntate") || set.name.includes("Puntate") || block.length==1) {
                         episode_lists.push({episodes_url,name});
                     }
                 });
             });
         }
-        const episode_urls = [];
+
         if (episode_lists.length>0) {
+            const episode_urls = [];
             for (const episode_list of episode_lists) {
                 // console.log(episode_list.episodes_url)
                 const response = await request_url(episode_list.episodes_url);
-                episodes_json = response.data
+                if (typeof response.data === 'string') {
+                    episodes_json = JSON.parse(response.data.replace(/[\x00-\x1F\x7F-\x9F]/g, ""));
+                }else{
+                    episodes_json = response.data
+                }
 
                 for (let season of episodes_json.seasons) {
                     for (let episode of season.episodes) {
@@ -93,14 +102,18 @@ async function get_episodes(catalog_id, show, cache){
                             // Extract information from each card
                             for (let card of episode.cards) {
                                 episode_urls.push(`https://www.raiplay.it${card.path_id}`);
+                                if(!fullsearch) break
                             }
                         }
+                        if(!fullsearch) break
                     }
+                    if(!fullsearch) break
                 }
             };
 
             initialized = false
             // index = 0
+            episode_list = []
             for(let episode_url of episode_urls){
                 if (await cache.has_subkey(episode_url)) continue
                 episode = await get_episode(episode_url)
@@ -118,17 +131,30 @@ async function get_episodes(catalog_id, show, cache){
                     initialized = true
                 }
 
-                episode.id = `${catalog_id}:${id_programma}:${episode.season}:${episode.episode}`,
-                await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
-                await cache.update_visited(episode_url, new Date());
-
+                episode.id = `${catalog_id}:${id_programma}:${episode.season}:${episode.episode}`
+                episode.url = episode_url
+                episode_list.push(episode)
                 // if(index>10) break // cache 10 episodes by most recent at a time
                 // index += 1
             }
+            // console.log(episode_list)
+            id_set = new Set();
+            for(let episode of episode_list){
+                while(id_set.has(episode.id)){
+                    episode.episode+=1
+                    episode.id = `${catalog_id}:${id_programma}:${episode.season}:${episode.episode}`
+                }
+                id_set.add(episode.id)
+                const episode_url = episode.url;
+                delete episode.url;
+                await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
+                await cache.update_visited(episode_url, new Date());
+            }
+            // console.log(episode_list)
         }
     } catch (error) {
         console.error(error.message);
-        throw error
+        // throw error
     }
 }
 
@@ -147,7 +173,7 @@ async function get_episode(url) {
         return {
                 "season": season,
                 "episode": episode_number,
-                "title": jsonData.episode_title || '',
+                "title": jsonData.episode_title || jsonData.toptitle || '',
                 "released": new Date(`${jsonData.track_info.update_date.split("-").join("-")}T${jsonData.time_published}:00`),
                 // "released": new Date(`${jsonData.date_published.split("-").reverse().join("-")}T${jsonData.time_published}:00`),
                 "overview": jsonData.description || '',
