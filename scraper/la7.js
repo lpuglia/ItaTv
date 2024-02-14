@@ -87,13 +87,13 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
         // Check for Ultima Puntata
         const aTag = $('.ultima_puntata a');
         if (aTag.length) {
-            episodeUrls.push(aTag.attr('href'));
+            episodeUrls.push("https://www.la7.it/"+aTag.attr('href'));
         }
     
         // Check for La Settimana
         const elements = $("div.subcontent div.hidden-prev a");
         for (const element of elements) {
-          episodeUrls.push($(element).attr("href"));
+          episodeUrls.push("https://www.la7.it/"+$(element).attr("href"));
           if(!fullsearch) break
         }
     
@@ -103,7 +103,7 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
             const episodeLinks = $("div.common-item > a");
             if (episodeLinks.length === 0) break;
             for(episodeLink of episodeLinks){
-                episodeUrls.push($(episodeLink).attr("href"));
+                episodeUrls.push("https://www.la7.it/"+$(episodeLink).attr("href"));
                 if(!fullsearch) break
             }
             if(!fullsearch) break
@@ -114,10 +114,9 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
         }
         
         initialized = false
-        // index = 0
         for (const episodeUrl of episodeUrls) {
             if (await cache.has_subkey(episodeUrl)) continue
-            episode = await get_episode("https://www.la7.it/"+episodeUrl)
+            episode = await get_episode(episodeUrl)
             if(episode.video_url === undefined) continue
 
             if(!initialized){
@@ -136,9 +135,6 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
 
             await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
             await cache.update_visited(episodeUrl, new Date());
-
-            // if(index>10) break // cache 10 episodes by most recent at a time
-            // index += 1
         }
             
     } catch (error) {
@@ -179,15 +175,20 @@ async function get_episode(url) {
             video_url = includedKeys.length ? includedKeys.reduce((acc, key) => { acc[key] = video_sources[key]; return acc;}, {}) : undefined;
             if(video_url.m3u8 && video_url.m3u8.includes('csmil')){
                 video_url.mpd = video_url.m3u8.replace("http://la7-vh.akamaihd.net/i", "https://awsvodpkg.iltrovatore.it/local/dash/").replace("csmil/master.m3u8", "urlset/manifest.mpd")
+                delete video_url.m3u8
             }
-            if(video_url!==undefined){
+
+            if (video_url !== undefined) {
+                const keyOrder = ["mpd", "m3u8", "mp4"];
                 const convertKey = key => ({
                     "mpd": "MPEG-Dash (.mpd)",
                     "m3u8": "MP3 URL (.m3u8)",
                     "mp4": "MPEG-4 (.mp4)",
                 }[key]);
-                
-                video_url = Object.entries(video_url).map(([key, url]) => ({title: convertKey(key), url}));
+            
+                video_url = keyOrder
+                    .filter(key => video_url[key] !== undefined) // Remove entries where URL is undefined
+                    .map(key => ({ title: convertKey(key), url: video_url[key] }));
             }
 
         } catch (error) {

@@ -17,7 +17,7 @@ function getPublicIpSync() {
 
 var manifest = {
     "id": "it.itatv",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "logo": "https://i.imgur.com/UFmjxIQ.png",
     "background": "https://i.imgur.com/zoEMlhv.png",
 
@@ -37,9 +37,10 @@ var manifest = {
     ],
     "name": "Ita TV",
     "description": `Selected Italian TV streams (${getPublicIpSync()})`
+
 }
-manifest.catalogs.push(...la7.catalogs);
 manifest.catalogs.push(...rai.catalogs);
+manifest.catalogs.push(...la7.catalogs);
 
 const builder = new addonBuilder(manifest)
 
@@ -124,6 +125,8 @@ cache = new MetaDictionary(process.env.VERBOSE)
 async function startAddon() {
     while (true) {
         fullsearch = process.env.FULLSEARCH===undefined ? false : process.env.FULLSEARCH;
+        // remove videos   db.videos.deleteMany({ "key": /^itatv_la7/ });
+        // remove visited  db.visited.deleteMany({ "key": /^https:\/\/www.la7/ });
         await rai.scrape(cache, fullsearch)
         await la7.scrape(cache, fullsearch)
     }
