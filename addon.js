@@ -124,8 +124,8 @@ cache = new MetaDictionary(process.env.VERBOSE)
 async function startAddon() {
     while (true) {
         fullsearch = process.env.FULLSEARCH===undefined ? false : process.env.FULLSEARCH;
-        await la7.scrape(cache, fullsearch)
         await rai.scrape(cache, fullsearch)
+        await la7.scrape(cache, fullsearch)
     }
 }
 startAddon();
