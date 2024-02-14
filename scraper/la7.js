@@ -49,7 +49,9 @@ async function scrape_la7(cache, catalog_id, la7d, fullsearch) {
 
         for (const show of shows) {
             console.log(show.name)
-            await get_episodes(catalog_id, show, cache, fullsearch)
+            // if(show.name==='otto-e-mezzo'){
+                await get_episodes(catalog_id, show, cache, fullsearch)
+            // }
         };
 
 
@@ -81,11 +83,19 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
     
         // List to store episode URLs
         const episodeUrls = [];
+
+        // Check for Ultima Puntata
+        const aTag = $('.ultima_puntata a');
+        if (aTag.length) {
+            episodeUrls.push(aTag.attr('href'));
+        }
     
         // Check for La Settimana
-        $("div.subcontent div.hidden-prev a").each((index, element) => {
+        const elements = $("div.subcontent div.hidden-prev a");
+        for (const element of elements) {
           episodeUrls.push($(element).attr("href"));
-        });
+          if(!fullsearch) break
+        }
     
         let counter = 1;
     
@@ -96,6 +106,7 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
                 episodeUrls.push($(episodeLink).attr("href"));
                 if(!fullsearch) break
             }
+            if(!fullsearch) break
             counter += 1;
 
             response = await request_url(url + "?page=" + counter);
