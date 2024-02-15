@@ -8,19 +8,12 @@ catalogs = [
                         { "name": "search", "isRequired": false },
                         { "name": "skip", "isRequired": false }
                     ]
-                },
-                {
-                    "id": "itatv_la7d", "type": "series", "name": "La7D Programmi",
-                    "extra": [
-                        { "name": "search", "isRequired": false },
-                        { "name": "skip", "isRequired": false }
-                    ]
                 }
             ]
 
 async function scrape(cache, fullsearch){
     await scrape_la7(cache, 'itatv_la7', la7d=false, fullsearch);
-    await scrape_la7(cache, 'itatv_la7d', la7d=true, fullsearch);
+    await scrape_la7(cache, 'itatv_la7', la7d=true, fullsearch);
     await scrape_tgla7(cache, 'itatv_tg');
 }
 
@@ -42,8 +35,8 @@ async function scrape_tgla7(cache, catalog_id) {
             "type": "series",
             "name": "TG La7",
             "description": "Tg La7",
-            "poster": "https://tg.la7.it/sites/all/themes/bootstrap/img/logo_mod.svg",
-            "background": "https://tg.la7.it/sites/all/themes/bootstrap/img/logo_mod.svg",
+            "poster": "https://kdam.iltrovatore.it/p/103/sp/10300/thumbnail/entry_id/0_xo6rfmcv/type/5/width/1024/quality/100/name/0_xo6rfmcv.jpg",
+            "background": "https://kdam.iltrovatore.it/p/103/sp/10300/thumbnail/entry_id/0_xo6rfmcv/type/5/width/1024/quality/100/name/0_xo6rfmcv.jpg",
             "posterShape" : "landscape"
         });
 
@@ -218,7 +211,7 @@ async function get_episode(url) {
         season = +dateParts[2]
         episode_number = parseInt(dateParts[1].padStart(2, '0') + dateParts[0].padStart(2, '0'))
 
-        videoUrl = parseVideoSources(response.data)
+        video_url = parseVideoSources(response.data)
 
         return {
                     "season": season,
