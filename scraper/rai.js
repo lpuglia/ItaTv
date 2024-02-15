@@ -13,6 +13,45 @@ catalogs = [
 
 async function scrape(cache, fullsearch){
     await scrape_rai_programmi(cache, 'itatv_rai_programmi', fullsearch);
+    await scrape_tgrai(cache, 'itatv_tg');
+}
+
+async function scrape_tgrai(cache, catalog_id) {
+    tg_pages = ["https://www.rainews.it/notiziari/tg1",
+                "https://www.rainews.it/notiziari/tg2",
+                "https://www.rainews.it/notiziari/tg3"]
+    for(tg_page of tg_pages){
+        try {
+            const id_programma = tg_page.split('/')[4];
+            const response = await request_url(tg_page);
+            const $ = cheerio.load(response.data);
+            const player_data = JSON.parse($('rainews-player').attr('data'))
+
+            cache.update_catalogs(catalog_id, `${catalog_id}:${id_programma}`, {
+                "id": `${catalog_id}:${id_programma}`,
+                "type": "series",
+                "name": player_data.track_info.title,
+                "description": player_data.track_info.episode_title,
+                "poster": "https://www.rainews.it/"+player_data.image,
+                "background": "https://www.rainews.it/"+player_data.image,
+                "posterShape" : "landscape"
+            });
+
+            episode = {
+                "id": `${catalog_id}:${id_programma}::1`,
+                "episode": 1,
+                "title": player_data.track_info.episode_title,
+                "released": new Date(),
+                "overview": player_data.track_info.episode_title,
+                "thumbnail": "https://www.rainews.it/"+player_data.image,
+                "video_url": [{"title" : "MP3 URL (.m3u8)", "url" : player_data.content_url}]
+            }
+
+            await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
+        } catch (error) {
+            console.log(error)
+        }
+    }
 }
 
 async function scrape_rai_programmi(cache, catalog_id, fullsearch) {

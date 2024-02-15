@@ -21,6 +21,65 @@ catalogs = [
 async function scrape(cache, fullsearch){
     await scrape_la7(cache, 'itatv_la7', la7d=false, fullsearch);
     await scrape_la7(cache, 'itatv_la7d', la7d=true, fullsearch);
+    await scrape_tgla7(cache, 'itatv_tg');
+}
+
+async function scrape_tgla7(cache, catalog_id) {
+    try{
+        const id_programma = 'tgla7';
+        const response = await request_url("https://tg.la7.it/ultime-edizioni-del-tgla7");
+        const $ = cheerio.load(response.data);
+
+
+        element = $('.tgla7-news').first()
+        const href = $(element).find('.news-img a').attr('href');
+        page_url = "https://tg.la7.it"+href
+
+        episode = await get_edizione(page_url)
+
+        await cache.update_catalogs(catalog_id, `${catalog_id}:${id_programma}`, {
+            "id": `${catalog_id}:${id_programma}`,
+            "type": "series",
+            "name": "TG La7",
+            "description": "Tg La7",
+            "poster": "https://tg.la7.it/sites/all/themes/bootstrap/img/logo_mod.svg",
+            "background": "https://tg.la7.it/sites/all/themes/bootstrap/img/logo_mod.svg",
+            "posterShape" : "landscape"
+        });
+
+        episode.id = `${catalog_id}:${id_programma}::1`
+        episode.episode = 1
+
+        await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
+    
+    }catch (error){
+        console.error(error.message);
+        // throw error
+    }
+}
+
+
+async function get_edizione(url) {
+    try{
+        const response = await request_url(url);
+
+        const $ = cheerio.load(response.data);
+        video_url = parseVideoSources(response.data.replace("m3u8:",'"m3u8":').replace("mp4:",'"mp4":').replace('.mp4",','.mp4"'))
+
+        return {
+                    "episode": url.split('=')[1],
+                    "title": $('.tgla7-news-details-wrapper h1.tgla7-title').text(),
+                    "released": new Date(),
+                    "overview": $('.tgla7-news-details-wrapper .tgla7-descrizione').text().trim(),
+                    "thumbnail":  $('.tgla7-news-details-wrapper .la7-video-container img').attr('src'),
+                    "video_url": video_url
+                }
+    }
+    catch (error){
+        console.error(error.message);
+        return {}
+    }
+
 }
 
 async function scrape_la7(cache, catalog_id, la7d, fullsearch) {
@@ -159,42 +218,7 @@ async function get_episode(url) {
         season = +dateParts[2]
         episode_number = parseInt(dateParts[1].padStart(2, '0') + dateParts[0].padStart(2, '0'))
 
-
-        const regex = /src:\s*({[^}]+})/;
-        const match = response.data.match(regex);
-        try {
-            const video_sources = match && match[1] ? JSON.parse(match[1]) : undefined;
-            video_url = video_sources?.m3u8 || video_sources?.dash;
-            video_url = ['mp4', 'dash', 'm3u8'].reduce((acc, key) => {
-                if (video_sources[key]) { acc[key] = video_sources[key]; } return acc;
-            }, {});
-
-            // create a dictionary with the available sources, exclude not available sources, if none set undefined
-            const keysToInclude = ['m3u8', 'mp4'];
-            const includedKeys = keysToInclude.filter(key => video_sources[key]);
-            video_url = includedKeys.length ? includedKeys.reduce((acc, key) => { acc[key] = video_sources[key]; return acc;}, {}) : undefined;
-            if(video_url.m3u8 && video_url.m3u8.includes('csmil')){
-                video_url.mpd = video_url.m3u8.replace("http://la7-vh.akamaihd.net/i", "https://awsvodpkg.iltrovatore.it/local/dash/").replace("csmil/master.m3u8", "urlset/manifest.mpd")
-                delete video_url.m3u8
-            }
-
-            if (video_url !== undefined) {
-                const keyOrder = ["mpd", "m3u8", "mp4"];
-                const convertKey = key => ({
-                    "mpd": "MPEG-Dash (.mpd)",
-                    "m3u8": "MP3 URL (.m3u8)",
-                    "mp4": "MPEG-4 (.mp4)",
-                }[key]);
-            
-                video_url = keyOrder
-                    .filter(key => video_url[key] !== undefined) // Remove entries where URL is undefined
-                    .map(key => ({ title: convertKey(key), url: video_url[key] }));
-            }
-
-        } catch (error) {
-            console.error(`Error parsing JSON in '${url}': `, error);
-            video_url = undefined;
-        }
+        videoUrl = parseVideoSources(response.data)
 
         return {
                     "season": season,
@@ -211,6 +235,59 @@ async function get_episode(url) {
         return {}
     }
 
+}
+
+function parseVideoSources(responseData) {
+    let videoUrl;
+    const regex = /src:\s*({[^}]+})/;
+    const match = responseData.match(regex);
+
+    try {
+        const videoSources = match && match[1] ? JSON.parse(match[1]) : undefined;
+        // Initially, trying to set videoUrl to a specific format if available
+        videoUrl = videoSources?.m3u8 || videoSources?.dash;
+
+        // Redefining videoUrl to include all available sources, excluding the not available ones
+        videoUrl = ['mp4', 'dash', 'm3u8'].reduce((acc, key) => {
+            if (videoSources && videoSources[key]) {
+                acc[key] = videoSources[key];
+            }
+            return acc;
+        }, {});
+
+        // Further refining videoUrl to include only specified keys, if any are available
+        const keysToInclude = ['m3u8', 'mp4'];
+        const includedKeys = keysToInclude.filter(key => videoSources && videoSources[key]);
+        videoUrl = includedKeys.length ? includedKeys.reduce((acc, key) => {
+            acc[key] = videoSources[key];
+            return acc;
+        }, {}) : undefined;
+
+        // Special handling for m3u8 sources that contain 'csmil' in their URL
+        if (videoUrl && videoUrl.m3u8 && videoUrl.m3u8.includes('csmil')) {
+            videoUrl.mpd = videoUrl.m3u8.replace("http://la7-vh.akamaihd.net/i", "https://awsvodpkg.iltrovatore.it/local/dash/").replace("csmil/master.m3u8", "urlset/manifest.mpd");
+            delete videoUrl.m3u8;
+        }
+
+        // Final transformation of videoUrl to include titles for each video format
+        if (videoUrl !== undefined) {
+            const keyOrder = ["mpd", "m3u8", "mp4"];
+            const convertKey = key => ({
+                "mpd": "MPEG-Dash (.mpd)",
+                "m3u8": "MP3 URL (.m3u8)",
+                "mp4": "MPEG-4 (.mp4)",
+            }[key]);
+
+            videoUrl = keyOrder
+                .filter(key => videoUrl[key] !== undefined) // Remove entries where URL is undefined
+                .map(key => ({ title: convertKey(key), url: videoUrl[key] }));
+        }
+
+        return videoUrl;
+    } catch (error) {
+        console.error(`Error parsing JSON: `, error);
+        return undefined;
+    }
 }
 
 module.exports = { catalogs, scrape };

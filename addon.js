@@ -3,6 +3,7 @@ const { addonBuilder } = require("stremio-addon-sdk")
 const request = require('sync-request');
 const la7 = require('./scraper/la7');
 const rai = require('./scraper/rai');
+const lira = require('./scraper/lira');
 const MetaDictionary = require('./mongodictionary');
 
 function getPublicIpSync() {
@@ -17,11 +18,18 @@ function getPublicIpSync() {
 
 var manifest = {
     "id": "it.itatv",
-    "version": "0.1.6",
+    "version": "0.2.0",
     "logo": "https://i.imgur.com/UFmjxIQ.png",
     "background": "https://i.imgur.com/zoEMlhv.png",
 
     "catalogs": [
+        {
+            "id": "itatv_tg", "type": "series", "name": "ITA TG Edizioni",
+            "extra": [
+                { "name": "search", "isRequired": false },
+                { "name": "skip", "isRequired": false }
+            ]
+        }
     ],
     "resources": [
 		"catalog",
@@ -41,6 +49,7 @@ var manifest = {
 }
 manifest.catalogs.push(...rai.catalogs);
 manifest.catalogs.push(...la7.catalogs);
+manifest.catalogs.push(...lira.catalogs);
 
 const builder = new addonBuilder(manifest)
 
@@ -129,6 +138,7 @@ async function startAddon() {
         // remove visited  db.visited.deleteMany({ "key": /^https:\/\/www.la7/ });
         await rai.scrape(cache, fullsearch)
         await la7.scrape(cache, fullsearch)
+        await lira.scrape(cache, fullsearch)
     }
 }
 startAddon();
