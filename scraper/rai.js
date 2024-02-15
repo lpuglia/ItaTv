@@ -91,7 +91,7 @@ async function scrape_rai_programmi(cache, catalog_id, fullsearch) {
 
             for (const show of shows) {
                 console.log(show.name)
-                // if(show.name==="Gazebo"){
+                // if(show.name==="Dal mito alla Storia"){
                     await get_episodes(catalog_id, show, cache, fullsearch)
                 // }
             };
@@ -165,8 +165,8 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
                         "type": "series",
                         "name": jsonData.name,
                         "description": jsonData.program_info.description,
-                        "poster": `https://www.raiplay.it${jsonData.program_info.images.portrait_logo}` || '',
-                        "background": `https://www.raiplay.it${jsonData.program_info.images.landscape_logo}` || '',
+                        "poster": "https://www.raiplay.it" + (jsonData.program_info.images.portrait_logo || jsonData.program_info.images.portrait || ''),
+                        "background": "https://www.raiplay.it" + (jsonData.program_info.images.landscape_logo || jsonData.program_info.images.landscape || ''),
                     })
                     initialized = true
                 }
@@ -217,7 +217,7 @@ async function get_episode(url) {
                 "released": new Date(`${jsonData.track_info.update_date.split("-").join("-")}T${jsonData.time_published}:00`),
                 // "released": new Date(`${jsonData.date_published.split("-").reverse().join("-")}T${jsonData.time_published}:00`),
                 "overview": jsonData.description || '',
-                "thumbnail": `https://www.raiplay.it${jsonData.images.landscape}` || '',
+                "thumbnail": "https://www.raiplay.it"+ (jsonData.images.landscape || "/resizegd/275x-/dl/components/img/raiplay-search-landscape.jpg"),
                 "video_url": [{"title": "MP3 URL (.m3u8)", "url": jsonData.video.content_url}]
             }
     }
