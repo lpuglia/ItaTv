@@ -38,8 +38,8 @@ async function request_url(url){
                 await sleep(10000/maxRequestsPerSecond);
             }else{
                 console.error(error.message);
+                throw error
             }
-            // throw error
         }
     }
 }
