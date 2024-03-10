@@ -132,13 +132,16 @@ builder.defineCatalogHandler(({type, id, extra}) => {
 cache = new MetaDictionary(process.env.VERBOSE)
 
 async function startAddon() {
-    while (true) {
-        fullsearch = process.env.FULLSEARCH===undefined ? false : process.env.FULLSEARCH;
-        // remove videos   db.videos.deleteMany({ "key": /^itatv_la7/ });
-        // remove visited  db.visited.deleteMany({ "key": /^https:\/\/www.la7/ });
-        await rai.scrape(cache, fullsearch)
-        await la7.scrape(cache, fullsearch)
-        await lira.scrape(cache, fullsearch)
+    no_search = process.env.NOSEARCH===undefined ? false : process.env.NOSEARCH;
+    if(!no_search){
+        while (true) {
+            fullsearch = process.env.FULLSEARCH===undefined ? false : process.env.FULLSEARCH;
+            // remove videos   db.videos.deleteMany({ "key": /^itatv_la7/ });
+            // remove visited  db.visited.deleteMany({ "key": /^https:\/\/www.la7/ });
+            await rai.scrape(cache, fullsearch)
+            await la7.scrape(cache, fullsearch)
+            await lira.scrape(cache, fullsearch)
+        }
     }
 }
 startAddon();
