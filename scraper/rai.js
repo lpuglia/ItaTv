@@ -1,4 +1,6 @@
 const cheerio = require('cheerio');
+const axios = require('axios');
+
 const {request_url} = require('./scrapermanager');
 
 catalogs = [
@@ -198,6 +200,25 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
     }
 }
 
+async function getLocationHeader(url) {
+    try {
+      const response = await axios.get(url, {
+        maxRedirects: 0, // Prevent axios from following redirects automatically
+        validateStatus: function (status) {
+          return status >= 200 && status < 303; // Accept all 2xx and 3xx statuses to prevent axios from throwing an error on redirects (3xx status codes)
+        }
+      });
+      return response.headers.location.split('?')[0]; // Extract the Location header
+    } catch (error) {
+      if (error.response && error.response.headers.location) {
+        return error.response.headers.location; // Return Location header from the error response if available
+      }
+      // Handle other errors (e.g., no response, no Location header, etc.)
+      console.error('Error fetching Location header:', error.message);
+      return null;
+    }
+  }
+
 async function get_episode(url) {
     try{
         // console.log(url)
@@ -218,7 +239,7 @@ async function get_episode(url) {
                 // "released": new Date(`${jsonData.date_published.split("-").reverse().join("-")}T${jsonData.time_published}:00`),
                 "overview": jsonData.description || '',
                 "thumbnail": "https://www.raiplay.it"+ (jsonData.images.landscape || "/resizegd/275x-/dl/components/img/raiplay-search-landscape.jpg"),
-                "video_url": [{"title": "MP3 URL (.m3u8)", "url": jsonData.video.content_url}]
+                "video_url": [{"title": "MP3 URL (.m3u8)", "url": await getLocationHeader(jsonData.video.content_url)}]
             }
     }
     catch (error){
