@@ -18,6 +18,25 @@ async function scrape(cache, fullsearch){
     await scrape_tgrai(cache, 'itatv_tg');
 }
 
+async function getLocationHeader(url) {
+    try {
+      const response = await axios.get(url, {
+        maxRedirects: 0, // Prevent axios from following redirects automatically
+        validateStatus: function (status) {
+          return status >= 200 && status < 303; // Accept all 2xx and 3xx statuses to prevent axios from throwing an error on redirects (3xx status codes)
+        }
+      });
+      return response.headers.location.split('?')[0]; // Extract the Location header
+    } catch (error) {
+      if (error.response && error.response.headers.location) {
+        return error.response.headers.location; // Return Location header from the error response if available
+      }
+      // Handle other errors (e.g., no response, no Location header, etc.)
+      console.error('Error fetching Location header:', error.message);
+      return null;
+    }
+  }
+
 async function scrape_tgrai(cache, catalog_id) {
     tg_pages = ["https://www.rainews.it/notiziari/tg1",
                 "https://www.rainews.it/notiziari/tg2",
@@ -46,7 +65,7 @@ async function scrape_tgrai(cache, catalog_id) {
                 "released": new Date(),
                 "overview": player_data.track_info.episode_title,
                 "thumbnail": "https://www.rainews.it/"+player_data.image,
-                "video_url": [{"title" : "MP3 URL (.m3u8)", "url" : player_data.content_url}]
+                "video_url": [{"title" : "MP3 URL (.m3u8)", "url" : await getLocationHeader(jsonData.video.content_url)}]
             }
 
             await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
@@ -199,25 +218,6 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
         // throw error
     }
 }
-
-async function getLocationHeader(url) {
-    try {
-      const response = await axios.get(url, {
-        maxRedirects: 0, // Prevent axios from following redirects automatically
-        validateStatus: function (status) {
-          return status >= 200 && status < 303; // Accept all 2xx and 3xx statuses to prevent axios from throwing an error on redirects (3xx status codes)
-        }
-      });
-      return response.headers.location.split('?')[0]; // Extract the Location header
-    } catch (error) {
-      if (error.response && error.response.headers.location) {
-        return error.response.headers.location; // Return Location header from the error response if available
-      }
-      // Handle other errors (e.g., no response, no Location header, etc.)
-      console.error('Error fetching Location header:', error.message);
-      return null;
-    }
-  }
 
 async function get_episode(url) {
     try{
