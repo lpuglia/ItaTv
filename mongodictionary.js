@@ -67,6 +67,7 @@ class MetaDictionary {
         const count = await visited.countDocuments({ "key": subKey });
         this.log(`Check if subkey '${subKey}' is visited in MongoDB`);
         return count > 0;
+        // return false;
     }
 
     async getCatalog(catalog_id) {

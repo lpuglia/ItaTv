@@ -15,6 +15,7 @@ async function scrape_tglira(cache, catalog_id) {
         first_article = $('article a').first().attr('href')
         response = await request_url(first_article);
         $ = cheerio.load(response.data);
+        const unixTimestamp = Math.floor(new Date($('time').attr('datetime')).getTime() / 1000);
 
         cache.update_catalogs(catalog_id, `${catalog_id}:${id_programma}`, {
             "id": `${catalog_id}:${id_programma}`,
@@ -27,7 +28,7 @@ async function scrape_tglira(cache, catalog_id) {
         });
 
         episode = {
-            "id": `${catalog_id}:${id_programma}::1`,
+            "id": `${catalog_id}:${id_programma}::${unixTimestamp}`,
             "episode": 1,
             "title": $('h1').first().text(),
             "released": new Date(),
@@ -36,7 +37,7 @@ async function scrape_tglira(cache, catalog_id) {
             "video_url": [{"title" : "MP3 URL (.m3u8)", "url" : $('video source').first().attr('src')}]
         }
 
-        await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
+        await cache.update_videos(`${catalog_id}:${id_programma}`, `${catalog_id}:${id_programma}::1`, episode);
     
     }catch (error){
         console.error(error.message);

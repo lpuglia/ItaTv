@@ -14,8 +14,8 @@ catalogs = [
             ]
 
 async function scrape(cache, fullsearch){
-    await scrape_rai_programmi(cache, 'itatv_rai_programmi', fullsearch);
     await scrape_tgrai(cache, 'itatv_tg');
+    await scrape_rai_programmi(cache, 'itatv_rai_programmi', fullsearch);
 }
 
 async function getLocationHeader(url) {
@@ -65,7 +65,7 @@ async function scrape_tgrai(cache, catalog_id) {
                 "released": new Date(),
                 "overview": player_data.track_info.episode_title,
                 "thumbnail": "https://www.rainews.it/"+player_data.image,
-                "video_url": [{"title" : "MP3 URL (.m3u8)", "url" : await getLocationHeader(jsonData.video.content_url)}]
+                "video_url": [{"title" : "MP3 URL (.m3u8)", "url" : await getLocationHeader( player_data.content_url)}]
             }
 
             await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
