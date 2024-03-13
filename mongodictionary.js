@@ -50,6 +50,18 @@ class MetaDictionary {
         return result;
     }
 
+    async delete_videos(key) {
+        const videos = await DictClient.get_collection("videos")
+        
+        const result = await videos.updateOne(
+            { key: { $exists: true } },
+            { $unset: { key: "" } }
+          );
+
+        this.log(`deleted from videos '${key}' in MongoDB`);
+        return result;
+    }
+
     async update_visited(key, value) {
         const visited = await DictClient.get_collection("visited")
         const result = await visited.updateOne(

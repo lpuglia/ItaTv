@@ -138,8 +138,8 @@ async function startAddon() {
         while (true) {
             // remove videos   db.videos.deleteMany({ "key": /^itatv_la7/ });
             // remove visited  db.visited.deleteMany({ "key": /^https:\/\/www.la7/ });
-            await lira.scrape(cache, fullsearch)
             await rai.scrape(cache, fullsearch)
+            await lira.scrape(cache, fullsearch)
             await la7.scrape(cache, fullsearch)
             if(fullsearch) break
         }

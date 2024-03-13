@@ -36,8 +36,8 @@ async function scrape_tglira(cache, catalog_id) {
             "thumbnail": $('video').first().attr('poster'),
             "video_url": [{"title" : "MP3 URL (.m3u8)", "url" : $('video source').first().attr('src')}]
         }
-
-        await cache.update_videos(`${catalog_id}:${id_programma}`, `${catalog_id}:${id_programma}::1`, episode);
+        await cache.delete_videos(`${catalog_id}:${id_programma}`)
+        await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
     
     }catch (error){
         console.error(error.message);
