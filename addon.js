@@ -132,15 +132,16 @@ builder.defineCatalogHandler(({type, id, extra}) => {
 cache = new MetaDictionary(process.env.VERBOSE)
 
 async function startAddon() {
-    no_search = process.env.NOSEARCH===undefined ? false : process.env.NOSEARCH;
+    no_search = process.env.NOSEARCH===undefined ? false : (process.env.NOSEARCH === 'true');
+    console.log(typeof(no_search), typeof(!no_search))
     if(!no_search){
-        fullsearch = process.env.FULLSEARCH===undefined ? false : process.env.FULLSEARCH;
+        fullsearch = process.env.FULLSEARCH===undefined ? false : (process.env.FULLSEARCH === 'true');
         while (true) {
             // remove videos   db.videos.deleteMany({ "key": /^itatv_la7/ });
             // remove visited  db.visited.deleteMany({ "key": /^https:\/\/www.la7/ });
+            await la7.scrape(cache, fullsearch)
             await rai.scrape(cache, fullsearch)
             await lira.scrape(cache, fullsearch)
-            await la7.scrape(cache, fullsearch)
             if(fullsearch) break
         }
     }

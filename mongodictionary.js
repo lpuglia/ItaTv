@@ -51,14 +51,12 @@ class MetaDictionary {
     }
 
     async delete_videos(key) {
-        const videos = await DictClient.get_collection("videos")
+        const videos = await DictClient.get_collection("videos");
         
-        const result = await videos.updateOne(
-            { key: { $exists: true } },
-            { $unset: { key: "" } }
-          );
-
-        this.log(`deleted from videos '${key}' in MongoDB`);
+        // Use deleteOne to remove the document with the specified key
+        const result = await videos.deleteOne({ key: key });
+    
+        this.log(`Deleted document with key '${key}' from 'videos' in MongoDB`);
         return result;
     }
 
@@ -123,6 +121,7 @@ class MetaDictionary {
     async getStream(catalog_id, meta_key, season, episode){
         const metakey = [catalog_id, meta_key].join(":")
         const fullkey = [catalog_id, meta_key, season, episode].join(":")
+        // console.log(catalog_id, meta_key, season, episode)
         const videos = await DictClient.get_collection("videos")
         let streams = await videos.findOne(
             { key: metakey, [`videos.${fullkey}.video_url`]: { $exists: true } },
