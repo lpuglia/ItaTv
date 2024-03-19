@@ -111,7 +111,7 @@ async function scrape_rai_programmi(cache, catalog_id, fullsearch) {
             });
 
             for (const show of shows) {
-                console.log(show.name)
+                // console.log(show.name)
                 // if(show.name==="Dal mito alla Storia"){
                     await get_episodes(catalog_id, show, cache, fullsearch)
                 // }
@@ -125,7 +125,7 @@ async function scrape_rai_programmi(cache, catalog_id, fullsearch) {
 
 async function get_episodes(catalog_id, show, cache, fullsearch){
     try {
-        console.log(`https://www.raiplay.it${show.url}.json`)
+        // console.log(`https://www.raiplay.it${show.url}.json`)
         const response = await request_url(`https://www.raiplay.it${show.url}.json`);
 
         const id_programma = show.url
@@ -177,7 +177,7 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
             for(const episode_url of episode_urls){
                 if (await cache.has_subkey(episode_url)) continue
                 episode = await get_episode(episode_url)
-                console.log(episode)
+                // console.log(episode)
                 if(episode.video_url === undefined) continue
 
                 if(!initialized){
