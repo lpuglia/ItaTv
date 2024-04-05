@@ -14,7 +14,7 @@ catalogs = [
             ]
 
 async function scrape(cache, fullsearch){
-    await scrape_tgrai(cache, 'itatv_tg');
+    await scrape_rai_tg(cache, 'itatv_tg');
     await scrape_rai_programmi(cache, 'itatv_rai_programmi', fullsearch);
 }
 
@@ -37,7 +37,7 @@ async function getLocationHeader(url) {
     }
   }
 
-async function scrape_tgrai(cache, catalog_id) {
+async function scrape_rai_tg(cache, catalog_id) {
     tg_pages = ["https://www.rainews.it/notiziari/tg1",
                 "https://www.rainews.it/notiziari/tg2",
                 "https://www.rainews.it/notiziari/tg3"]

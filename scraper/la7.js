@@ -260,8 +260,6 @@ function parseVideoSources(responseData) {
         if (videoUrl && videoUrl.m3u8 && videoUrl.m3u8.includes('csmil')) {
             videoUrl.mpd  = videoUrl.m3u8.replace("http://la7-vh.akamaihd.net/i/", "https://awsvodpkg.iltrovatore.it/local/dash/").replace("csmil/master.m3u8", "urlset/manifest.mpd");
             videoUrl.m3u8 = videoUrl.m3u8.replace("http://la7-vh.akamaihd.net/i/", "https://awsvodpkg.iltrovatore.it/local/hls/").replace("csmil/master.m3u8", "urlset/master.m3u8");
-            // videoUrl.mpd = videoUrl.m3u8.replace("http://la7-vh.akamaihd.net/i", "https://awsvodpkg.iltrovatore.it/local/dash/").replace("csmil/master.m3u8", "urlset/manifest.mpd");
-            // delete videoUrl.m3u8;
         }
 
         // Final transformation of videoUrl to include titles for each video format

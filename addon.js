@@ -119,7 +119,12 @@ builder.defineCatalogHandler(({type, id, extra}) => {
     }
     if(extra.search) {
         return results.then(items => ({
-            metas: items.filter(meta => isSimilarTitle(meta.name.toLowerCase(), extra.search.toLowerCase(), 0.5) || isSimilarDesc(meta.description.toLowerCase(), extra.search.toLowerCase(), 0.8))
+            metas: items.filter(meta => {
+            const search = extra.search ? extra.search.toLowerCase() : null;
+            const name = meta.name ? meta.name.toLowerCase() : null;
+            const description = meta.description ? meta.description.toLowerCase() : null;
+            return isSimilarTitle(name, search, 0.5) || isSimilarDesc(description, search, 0.8);
+            })
         }))
     }
 
