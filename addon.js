@@ -18,7 +18,7 @@ function getPublicIpSync() {
 
 var manifest = {
     "id": "it.itatv",
-    "version": "0.2.4",
+    "version": "0.2.5",
     "logo": "https://i.imgur.com/UFmjxIQ.png",
     "background": "https://i.imgur.com/zoEMlhv.png",
 
@@ -94,6 +94,9 @@ builder.defineCatalogHandler(({type, id, extra}) => {
         return similarity >= threshold;
     }
     function isSimilarDesc(str1, str2, threshold) {
+        if (!str2) {
+            return false;
+        }
         for(word of getConsecutiveWordSets(str1, str2.split(" ").length)){
             if(stringSimilarity.compareTwoStrings(word, str2) >= threshold){
                 return true
