@@ -31,6 +31,7 @@ async function scrape_tglira(cache, catalog_id) {
         episode = {
             "id": `${catalog_id}:${id_programma}::${unixTimestamp}`,
             "episode": 1,
+            "season": 1,
             "title": $('h1').first().text(),
             "released": new Date(),
             "overview": "Tutte le notizie a cura della redazione giornalistica di LiraTV",

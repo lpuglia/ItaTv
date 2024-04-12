@@ -18,7 +18,7 @@ function getPublicIpSync() {
 
 var manifest = {
     "id": "it.itatv",
-    "version": "0.2.5",
+    "version": "0.2.6",
     "logo": "https://i.imgur.com/UFmjxIQ.png",
     "background": "https://i.imgur.com/zoEMlhv.png",
 
@@ -123,9 +123,9 @@ builder.defineCatalogHandler(({type, id, extra}) => {
     if(extra.search) {
         return results.then(items => ({
             metas: items.filter(meta => {
-            const search = extra.search ? extra.search.toLowerCase() : null;
-            const name = meta.name ? meta.name.toLowerCase() : null;
-            const description = meta.description ? meta.description.toLowerCase() : null;
+            const search = extra.search ? extra.search.toLowerCase() : "";
+            const name = meta.name ? meta.name.toLowerCase() : "";
+            const description = meta.description ? meta.description.toLowerCase() : "";
             return isSimilarTitle(name, search, 0.5) || isSimilarDesc(description, search, 0.8);
             })
         }))
