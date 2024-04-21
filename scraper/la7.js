@@ -1,5 +1,6 @@
 const cheerio = require('cheerio');
 const {request_url} = require('./scrapermanager');
+// const { SingleBar } = require('cli-progress');
 
 catalogs = [
                 {
@@ -114,7 +115,6 @@ async function scrape_la7(cache, catalog_id, la7d, fullsearch) {
 }
 
 async function get_episodes(catalog_id, show, cache, fullsearch){
-
     try {
         let response = await request_url("https://www.la7.it/" + show.name);
         let $ = cheerio.load(response.data);
@@ -134,18 +134,18 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
         $ = cheerio.load(response.data);
     
         // List to store episode URLs
-        const episodeUrls = [];
+        const episode_urls = [];
 
         // Check for Ultima Puntata
         const aTag = $('.ultima_puntata a');
         if (aTag.length) {
-            episodeUrls.push("https://www.la7.it/"+aTag.attr('href'));
+            episode_urls.push("https://www.la7.it/"+aTag.attr('href'));
         }
     
         // Check for La Settimana
         const elements = $("div.subcontent div.hidden-prev a");
         for (const element of elements) {
-          episodeUrls.push("https://www.la7.it/"+$(element).attr("href"));
+          episode_urls.push("https://www.la7.it/"+$(element).attr("href"));
           if(!fullsearch) break
         }
     
@@ -155,7 +155,7 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
             const episodeLinks = $("div.common-item > a");
             if (episodeLinks.length === 0) break;
             for(episodeLink of episodeLinks){
-                episodeUrls.push("https://www.la7.it/"+$(episodeLink).attr("href"));
+                episode_urls.push("https://www.la7.it/"+$(episodeLink).attr("href"));
                 if(!fullsearch) break
             }
             if(!fullsearch) break
@@ -166,9 +166,18 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
         }
         
         initialized = false
-        for (const episodeUrl of episodeUrls) {
-            if (await cache.has_subkey(episodeUrl)) continue
-            episode = await get_episode(episodeUrl)
+        episode_list = []
+        // const progressBar = new SingleBar({
+        //     format: '{bar} {percentage}% | ETA: {eta}s | {value}/{total}',
+        //     barCompleteChar: '\u2588',
+        //     barIncompleteChar: '\u2591',
+        //     hideCursor: true
+        // });
+        // progressBar.start(episode_urls.length, 0);
+
+        for (const episode_url of episode_urls) {
+            if (await cache.has_subkey(episode_url)) continue
+            episode = await get_episode(episode_url)
             if(episode.video_url === undefined) continue
 
             if(!initialized){
@@ -182,13 +191,25 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
                 });
                 initialized = true
             }
-
             episode.id = `${catalog_id}:${id_programma}:${episode.season}:${episode.episode}`
-
-            await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
-            await cache.update_visited(episodeUrl, new Date());
+            episode.url = episode_url
+            episode_list.push(episode)
+            // progressBar.increment();
         }
-            
+        // progressBar.stop();
+        id_set = new Set();
+        for(let episode of episode_list){
+            while(id_set.has(episode.id)){
+                episode.episode+=1
+                episode.id = `${catalog_id}:${id_programma}:${episode.season}:${episode.episode}`
+            }
+            id_set.add(episode.id)
+            const episode_url = episode.url;
+            delete episode.url;
+            await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
+            await cache.update_visited(episode_url, new Date());
+        }
+        
     } catch (error) {
         console.error(error.message);
         // throw error

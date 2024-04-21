@@ -1,7 +1,7 @@
 const axios = require('axios');
 const rateLimit = require('axios-rate-limit');
 
-let maxRequestsPerSecond = 2;
+let maxRequestsPerSecond = 10;
 
 let limitedAxios = rateLimit(axios.create(), {
   maxRequests: maxRequestsPerSecond,
@@ -24,7 +24,7 @@ async function request_url(url){
             // });
 
             // let response = await limitedAxios.get(url);
-            // if(maxRequestsPerSecond<100) maxRequestsPerSecond*=2
+            if(maxRequestsPerSecond<11) maxRequestsPerSecond*=2
             return response
         }catch (error){
             if (error.response) {
@@ -35,7 +35,7 @@ async function request_url(url){
                 if(error.response.status===404){
                     throw error
                 }
-                await sleep(10000/maxRequestsPerSecond);
+                await sleep(10000);
             }else{
                 console.error(error.message);
                 throw error

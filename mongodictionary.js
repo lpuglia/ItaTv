@@ -17,7 +17,7 @@ class MetaDictionary {
         updateFields[`metas.${subKey}`] = value;
         const catalogs = await DictClient.get_collection("catalogs")
         const result = await catalogs.updateOne(
-            { key },
+            { _id: key },
             { $set: updateFields },
             { upsert: true }
         );
@@ -41,7 +41,7 @@ class MetaDictionary {
         const updateFields = {};
         updateFields[`videos.${subKey}`] = value;
         const result = await videos.updateOne(
-            { key },
+            { _id: key },
             { $set: updateFields },
             { upsert: true }
         );
@@ -50,20 +50,10 @@ class MetaDictionary {
         return result;
     }
 
-    async delete_videos(key) {
-        const videos = await DictClient.get_collection("videos");
-        
-        // Use deleteOne to remove the document with the specified key
-        const result = await videos.deleteOne({ key: key });
-    
-        this.log(`Deleted document with key '${key}' from 'videos' in MongoDB`);
-        return result;
-    }
-
     async update_visited(key, value) {
         const visited = await DictClient.get_collection("visited")
         const result = await visited.updateOne(
-            { key },
+            { _id: key },
             { $set: { timestamp: value } },
             { upsert: true }
         );
@@ -72,9 +62,29 @@ class MetaDictionary {
         return result;
     }
 
+    async deleteOldVideos(key, days = 7) {
+        const videos = await DictClient.get_collection("videos");
+        const xDaysAgo = new Date();
+        xDaysAgo.setDate(xDaysAgo.getDate() - days);
+    
+        const cursor = await videos.aggregate([
+            { $match: { "_id": key } },
+            { $project: { videos: { $objectToArray: "$videos" } } },
+            { $unwind: "$videos" },
+            { $match: { "videos.v.released": { $lt: xDaysAgo } } }
+        ]);
+    
+        await cursor.forEach(async function (doc) {
+            await videos.updateOne(
+                { "_id": key },
+                { $unset: { ["videos." + doc.videos.k]: 1 } }
+            );
+        });
+    }
+    
     async has_subkey(subKey) {
         const visited = await DictClient.get_collection("visited")
-        const count = await visited.countDocuments({ "key": subKey });
+        const count = await visited.countDocuments({ "_id": subKey });
         this.log(`Check if subkey '${subKey}' is visited in MongoDB`);
         return count > 0;
         // return false;
@@ -85,13 +95,15 @@ class MetaDictionary {
 
         const catalogs = await DictClient.get_collection("catalogs")
         let catalog = await catalogs.aggregate([
-            { $match: { key: catalog_id } },
+            { $match: { _id: catalog_id } },
             { $project: { _id: 0, metas: { $objectToArray: '$metas' } } },
             { $unwind: '$metas' },
             { $replaceRoot: { newRoot: '$metas.v' } }
         ]).toArray();
         catalog = shuffleArray(catalog)
-        catalog[0].description = `${new Date()} ` + catalog[0].description
+        if (catalog.length > 0) {
+            catalog[0].description = `${new Date()} ` + catalog[0].description;
+        }
         return catalog
     }
 
@@ -99,14 +111,14 @@ class MetaDictionary {
         const fullkey = [catalog_id, meta_key].join(":")
         const catalogs = await DictClient.get_collection("catalogs")
         let meta = await catalogs.findOne(
-            { key: catalog_id, [`metas.${fullkey}`]: { $exists: true } },
+            { _id: catalog_id, [`metas.${fullkey}`]: { $exists: true } },
             { projection: { [`metas.${fullkey}`]: 1, _id: 0 } }
         )
         meta = meta.metas[fullkey];
         meta.description = `${new Date()} ` + meta.description
         const videos_collection = await DictClient.get_collection("videos")
         const videos = await videos_collection.aggregate([
-            { $match: { key: fullkey } },
+            { $match: { _id: fullkey } },
             { $project: { _id: 0, videos: { $objectToArray: '$videos' } } },
             { $unwind: '$videos' },
             { $replaceRoot: { newRoot: '$videos.v' } },
@@ -124,7 +136,7 @@ class MetaDictionary {
         // console.log(catalog_id, meta_key, season, episode)
         const videos = await DictClient.get_collection("videos")
         let streams = await videos.findOne(
-            { key: metakey, [`videos.${fullkey}.video_url`]: { $exists: true } },
+            { _id: metakey, [`videos.${fullkey}.video_url`]: { $exists: true } },
             { projection: { [`videos.${fullkey}.video_url`]: 1, _id: 0 } }
         );
         // console.log(streams)
