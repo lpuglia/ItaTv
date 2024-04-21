@@ -18,7 +18,7 @@ function getPublicIpSync() {
 
 var manifest = {
     "id": "it.itatv",
-    "version": "0.2.6",
+    "version": "0.3.0",
     "logo": "https://i.imgur.com/UFmjxIQ.png",
     "background": "https://i.imgur.com/zoEMlhv.png",
 
