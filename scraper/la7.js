@@ -45,7 +45,8 @@ async function scrape_tgla7(cache, catalog_id) {
         episode.episode = 1
 
         await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
-    
+        // await cache.deleteOldVideos(`${catalog_id}:${id_programma}`, 8)
+
     }catch (error){
         console.error(error.message);
         // throw error
@@ -133,20 +134,20 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
         response = await request_url(url);
         $ = cheerio.load(response.data);
     
-        // List to store episode URLs
-        const episode_urls = [];
+        // using set to avoid duplicates
+        const episode_urls = new Set();
 
         // Check for Ultima Puntata
         const aTag = $('.ultima_puntata a');
         if (aTag.length) {
-            episode_urls.push("https://www.la7.it/"+aTag.attr('href'));
+            episode_urls.add("https://www.la7.it/"+aTag.attr('href'));
         }
     
         // Check for La Settimana
         const elements = $("div.subcontent div.hidden-prev a");
         for (const element of elements) {
-          episode_urls.push("https://www.la7.it/"+$(element).attr("href"));
-          if(!fullsearch) break
+            episode_urls.add("https://www.la7.it/"+$(element).attr("href"));
+            if(!fullsearch) break
         }
     
         let counter = 1;
@@ -155,7 +156,7 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
             const episodeLinks = $("div.common-item > a");
             if (episodeLinks.length === 0) break;
             for(episodeLink of episodeLinks){
-                episode_urls.push("https://www.la7.it/"+$(episodeLink).attr("href"));
+                episode_urls.add("https://www.la7.it/"+$(episodeLink).attr("href"));
                 if(!fullsearch) break
             }
             if(!fullsearch) break
@@ -175,7 +176,8 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
         // });
         // progressBar.start(episode_urls.length, 0);
 
-        for (const episode_url of episode_urls) {
+        const episode_url_list = Array.from(episode_urls);
+        for (const episode_url of episode_url_list) {
             if (await cache.has_subkey(episode_url)) continue
             episode = await get_episode(episode_url)
             if(episode.video_url === undefined) continue
@@ -196,6 +198,7 @@ async function get_episodes(catalog_id, show, cache, fullsearch){
             episode_list.push(episode)
             // progressBar.increment();
         }
+
         // progressBar.stop();
         id_set = new Set();
         for(let episode of episode_list){
