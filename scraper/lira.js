@@ -12,8 +12,8 @@ async function scrape(cache, fullsearch){
         "type": "series",
         "name": "Lira TV",
         "description": "LiraTV... E sei protagonista",
-        "poster": "https://www.liratv.it/wp-content/uploads/2022/10/liratv_logo.png",
-        "background": "https://www.liratv.it/wp-content/uploads/2022/10/liratv_logo.png",
+        "poster": "https://www.liratv.it/wp-content/uploads/2024/05/1714825800_LIRATG-Cronaca-04052024_1714826439-585x329.jpg",
+        "background": "https://www.liratv.it/wp-content/uploads/2024/05/1714825800_LIRATG-Cronaca-04052024_1714826439-585x329.jpg",
         "posterShape" : "landscape"
     });
 

@@ -13,8 +13,8 @@ catalogs = [
             ]
 
 async function scrape(cache, fullsearch){
-    await scrape_la7(cache, 'itatv_la7', la7d=false, fullsearch);
-    await scrape_la7(cache, 'itatv_la7', la7d=true, fullsearch);
+    await scrape_la7(cache, 'itatv_la7', "https://www.la7.it/programmi", fullsearch);
+    await scrape_la7(cache, 'itatv_la7', "https://www.la7.it/programmi-la7d", fullsearch);
     await scrape_tgla7(cache, 'itatv_tg');
 }
 
@@ -24,12 +24,10 @@ async function scrape_tgla7(cache, catalog_id) {
         const response = await request_url("https://tg.la7.it/ultime-edizioni-del-tgla7");
         const $ = cheerio.load(response.data);
 
-
         element = $('.tgla7-news').first()
         const href = $(element).find('.news-img a').attr('href');
-        page_url = "https://tg.la7.it"+href
 
-        episode = await get_edizione(page_url)
+        episode = await get_edizione("https://tg.la7.it"+href)
 
         await cache.update_catalogs(catalog_id, `${catalog_id}:${id_programma}`, {
             "id": `${catalog_id}:${id_programma}`,
@@ -41,11 +39,10 @@ async function scrape_tgla7(cache, catalog_id) {
             "posterShape" : "landscape"
         });
 
-        episode.id = `${catalog_id}:${id_programma}::1`
-        episode.episode = 1
+        episode.id = `${catalog_id}:${id_programma}:${episode.season}:${episode.episode}`
 
         await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
-        // await cache.deleteOldVideos(`${catalog_id}:${id_programma}`, 8)
+        await cache.deleteOldVideos(`${catalog_id}:${id_programma}`, 8)
 
     }catch (error){
         console.error(error.message);
@@ -61,12 +58,15 @@ async function get_edizione(url) {
         const $ = cheerio.load(response.data);
         video_url = parseVideoSources(response.data.replace("m3u8:",'"m3u8":').replace("mp4:",'"mp4":').replace('.mp4",','.mp4"'))
 
+        const thumbnail = /poster:\s*"([^"]+)"/.exec(response.data)[1];
+        const releaseDate = new Date(parseInt(/date:\s*(\d+),/.exec(response.data)[1], 10));
         return {
+                    "season": releaseDate.getFullYear(),
                     "episode": url.split('=')[1],
                     "title": $('.tgla7-news-details-wrapper h1.tgla7-title').text(),
-                    "released": new Date(),
-                    "overview": $('.tgla7-news-details-wrapper .tgla7-descrizione').text().trim(),
-                    "thumbnail":  $('.tgla7-news-details-wrapper .la7-video-container img').attr('src'),
+                    "overview": $('.tgla7-descrizione').text().trim(),
+                    "released" : releaseDate,
+                    "thumbnail":  thumbnail,
                     "video_url": video_url
                 }
     }
@@ -77,14 +77,10 @@ async function get_edizione(url) {
 
 }
 
-async function scrape_la7(cache, catalog_id, la7d, fullsearch) {
+async function scrape_la7(cache, catalog_id, la7url, fullsearch) {
     try {
         let response = undefined
-        if(la7d){
-            response = await request_url("https://www.la7.it/programmi-la7d");
-        }else{
-            response = await request_url("https://www.la7.it/programmi");
-        }
+        response = await request_url(la7url);
         let $ = cheerio.load(response.data);
 
         const containerDiv = $('#container-programmi-list');
