@@ -28,6 +28,7 @@ async function scrape_tgla7(cache, catalog_id) {
         const href = $(element).find('.news-img a').attr('href');
 
         episode = await get_edizione("https://tg.la7.it"+href)
+        if (episode === undefined) return;
 
         await cache.update_catalogs(catalog_id, `${catalog_id}:${id_programma}`, {
             "id": `${catalog_id}:${id_programma}`,
@@ -41,8 +42,8 @@ async function scrape_tgla7(cache, catalog_id) {
 
         episode.id = `${catalog_id}:${id_programma}:${episode.season}:${episode.episode}`
 
-        await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
         await cache.deleteOldVideos(`${catalog_id}:${id_programma}`, 8)
+        await cache.update_videos(`${catalog_id}:${id_programma}`, episode.id, episode);
 
     }catch (error){
         console.error(error.message);
@@ -62,7 +63,7 @@ async function get_edizione(url) {
         const releaseDate = new Date(parseInt(/date:\s*(\d+),/.exec(response.data)[1], 10));
         return {
                     "season": releaseDate.getFullYear(),
-                    "episode": url.split('=')[1],
+                    "episode": parseInt(url.split('=')[1]),
                     "title": $('.tgla7-news-details-wrapper h1.tgla7-title').text(),
                     "overview": $('.tgla7-descrizione').text().trim(),
                     "released" : releaseDate,
@@ -72,7 +73,7 @@ async function get_edizione(url) {
     }
     catch (error){
         console.error(error.message);
-        return {}
+        return undefined
     }
 
 }
